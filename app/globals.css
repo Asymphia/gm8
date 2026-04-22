@@ -1,164 +1,169 @@
 @import "tailwindcss";
 
 :root {
-  color-scheme: light;
+   color-scheme: light;
 
-  --text-300: #9AA3B2;
-  --text-500: #4F5665;
-  --text-700: #1C1F2A;
+   --text-300: #9aa3b2;
+   --text-500: #4f5665;
+   --text-700: #1c1f2a;
 
-  --primary-300: #B7AEFF;
-  --primary-500: #7158FF;
-  --primary-700: #4E3BC7;
+   --primary-300: #b7aeff;
+   --primary-500: #7158ff;
+   --primary-700: #4e3bc7;
 
-  --foreground: #F4F4F4;
-  --surface: #F9FAFF;
-  --background: #FFFFFF;
-  --overlay: rgba(0, 0, 0, 0.1);
+   --foreground: #f4f4f4;
+   --surface: #f9faff;
+   --background: #ffffff;
+   --overlay: rgba(0, 0, 0, 0.1);
 
-  --border-300: #E5E5E5;
-  --border-500: #D5D5D5;
-  --border-700: #B5B5B5;
+   --border-300: #e5e5e5;
+   --border-500: #d5d5d5;
+   --border-700: #b5b5b5;
 
-  --warning: #FF5E58;
+   --warning: #ff5e58;
 
-  --shadow-color-300: rgba(112, 112, 112, 0.05);
-  --shadow-color-500: rgba(112, 112, 112, 0.1);
-  --shadow-color-700: rgba(112, 112, 112, 0.2);
+   --shadow-color-300: rgba(112, 112, 112, 0.05);
+   --shadow-color-500: rgba(112, 112, 112, 0.1);
+   --shadow-color-700: rgba(112, 112, 112, 0.2);
 
-  --shadow-menu: 1px 0 9px 0 var(--shadow-color-500);
-  --shadow-sm: 0 1px 9px 0 var(--shadow-color-300);
-  --shadow-md: 0 1px 9px 0 var(--shadow-color-500);
-  --shadow-lg: 0 1px 9px 0 var(--shadow-color-700);
+   --shadow-menu: 1px 0 9px 0 var(--shadow-color-500);
+   --shadow-sm: 0 1px 9px 0 var(--shadow-color-300);
+   --shadow-md: 0 1px 9px 0 var(--shadow-color-500);
+   --shadow-lg: 0 1px 9px 0 var(--shadow-color-700);
 }
 
 @theme inline {
-  --color-text-300: var(--text-300);
-  --color-text-500: var(--text-500);
-  --color-text-700: var(--text-700);
+   --color-text-300: var(--text-300);
+   --color-text-500: var(--text-500);
+   --color-text-700: var(--text-700);
 
-  --color-primary-300: var(--primary-300);
-  --color-primary-500: var(--primary-500);
-  --color-primary-700: var(--primary-700);
+   --color-primary-300: var(--primary-300);
+   --color-primary-500: var(--primary-500);
+   --color-primary-700: var(--primary-700);
 
-  --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
-  --color-background: var(--background);
-  --color-overlay: var(--overlay);
+   --color-foreground: var(--foreground);
+   --color-surface: var(--surface);
+   --color-background: var(--background);
+   --color-overlay: var(--overlay);
 
-  --color-border-300: var(--border-300);
-  --color-border-500: var(--border-500);
-  --color-border-700: var(--border-700);
+   --color-border-300: var(--border-300);
+   --color-border-500: var(--border-500);
+   --color-border-700: var(--border-700);
 
-  --color-warning: var(--warning);
+   --color-warning: var(--warning);
 
-  --color-shadow-300: var(--shadow-color-300);
-  --color-shadow-500: var(--shadow-color-500);
-  --color-shadow-700: var(--shadow-color-700);
+   --color-shadow-300: var(--shadow-color-300);
+   --color-shadow-500: var(--shadow-color-500);
+   --color-shadow-700: var(--shadow-color-700);
 
-  --shadow-menu: var(--shadow-menu);
-  --shadow-sm: var(--shadow-sm);
-  --shadow-md: var(--shadow-md);
-  --shadow-lg: var(--shadow-lg);
+   --shadow-menu: var(--shadow-menu);
+   --shadow-sm: var(--shadow-sm);
+   --shadow-md: var(--shadow-md);
+   --shadow-lg: var(--shadow-lg);
 
-  --font-dm-sans: var(--font-dm-sans);
+   --font-dm-sans: var(--font-dm-sans);
 
-  --radius-sm: 12px;
-  --radius-md: 20px;
+   --radius-sm: 12px;
+   --radius-md: 20px;
 }
 
 @layer base {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-300) transparent;
-  }
+   * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--border-300) transparent;
+   }
 
-  *::-webkit-scrollbar {
-    width: 8px;
-  }
+   *::-webkit-scrollbar {
+      width: 8px;
+   }
 
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
+   *::-webkit-scrollbar-track {
+      background: transparent;
+   }
 
-  *::-webkit-scrollbar-thumb {
-    background-color: var(--border-300);
-    border-radius: 999px;
-  }
+   *::-webkit-scrollbar-thumb {
+      background-color: var(--border-300);
+      border-radius: 999px;
+   }
 
-  html {
-    scroll-behavior: smooth;
-    scrollbar-gutter: stable;
-    font-size: 100%;
-    -webkit-text-size-adjust: 100%;
-    text-size-adjust: 100%;
-  }
+   html {
+      scroll-behavior: smooth;
+      scrollbar-gutter: stable;
+      font-size: 100%;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+   }
 
-  @media (max-width: 1024px) {
-    html {
-      font-size: 93%;
-    }
-  }
+   @media (max-width: 1024px) {
+      html {
+         font-size: 93%;
+      }
+   }
 
-  @media (max-width: 640px) {
-    html {
-      font-size: 87.5%;
-    }
-  }
+   @media (max-width: 640px) {
+      html {
+         font-size: 87.5%;
+      }
+   }
 
-  @media (max-width: 480px) {
-    html {
-      font-size: 79%;
-    }
-  }
+   @media (max-width: 480px) {
+      html {
+         font-size: 79%;
+      }
+   }
 
-  body {
-    font-family: var(--font-dm-sans);
-    background-color: var(--foreground);
-    font-size: 1rem;
-    color: var(--text-500);
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
-  }
+   body {
+      font-family: var(--font-dm-sans);
+      background-color: var(--foreground);
+      font-size: 1rem;
+      color: var(--text-500);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+   }
 
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-700);
-    font-weight: 500;
-    line-height: 1.1;
-  }
+   h1,
+   h2,
+   h3,
+   h4,
+   h5,
+   h6 {
+      color: var(--text-700);
+      font-weight: 500;
+      line-height: 1.1;
+   }
 
-  h1 {
-    font-size: 2rem;
-  }
+   h1 {
+      font-size: 2rem;
+   }
 
-  h2 {
-    font-size: 1.5rem;
-  }
+   h2 {
+      font-size: 1.5rem;
+   }
 
-  h3 {
-    font-size: 1.25rem;
-  }
+   h3 {
+      font-size: 1.25rem;
+   }
 
-  p {
-    line-height: 1.5;
-    text-wrap: pretty;
-  }
+   p {
+      line-height: 1.5;
+      text-wrap: pretty;
+   }
 
-  button {
-    cursor: pointer;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
+   button {
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+   }
 
-  button:disabled {
-    cursor: not-allowed;
-  }
+   button:disabled {
+      cursor: not-allowed;
+   }
 
-  ::selection {
-    background: color-mix(in srgb, var(--primary-300) 10%, transparent);
-    color: var(--primary-700);
-  }
+   ::selection {
+      background: color-mix(in srgb, var(--primary-300) 10%, transparent);
+      color: var(--primary-700);
+   }
 }

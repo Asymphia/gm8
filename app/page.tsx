@@ -1,5 +1,5 @@
 const Page = () => {
-  return (<p>szopy</p>)
+   return <p className="flex w-20 text-white">szopy</p>
 }
 
 export default Page
