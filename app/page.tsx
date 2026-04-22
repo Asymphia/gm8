@@ -1,5 +1,9 @@
-const Page = () => {
-   return <p className="flex w-20 text-white">szopy</p>
+const Dashboard = () => {
+   return (
+      <>
+         <h1>Dashboard</h1>
+      </>
+   )
 }
 
-export default Page
+export default Dashboard
