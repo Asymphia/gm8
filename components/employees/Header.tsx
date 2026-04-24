@@ -1,18 +1,17 @@
-import { MapPinIcon } from "@heroicons/react/24/outline"
 import SearchBar from "@/components/ui/SearchBar"
+import PageHeader from "@/components/ui/PageHeader"
+import type { ComponentType, SVGProps } from "react"
 
-const Header = () => {
+interface HeaderProps {
+   title: string
+   icon: ComponentType<SVGProps<SVGSVGElement>>
+   iconLabel: string
+}
+
+const Header = ({ title, icon, iconLabel }: HeaderProps) => {
    return (
-      <div className="flex justify-between">
-         <div>
-            <h1 className="text-2xl font-semibold text-text-700">
-               Employee List
-            </h1>
-            <div className="flex">
-               <MapPinIcon className="text-text-300 size-6" />
-               <p className="text-text-300">Firma</p>
-            </div>
-         </div>
+      <div className="flex items-start justify-between">
+         <PageHeader title={title} icon={icon} iconLabel={iconLabel} />
          <div>
             <SearchBar />
          </div>

@@ -1,4 +1,4 @@
-export type employee = {
+export interface EmployeeType {
    name: string
    surname: string
    phone: string
@@ -6,7 +6,7 @@ export type employee = {
    active: boolean
 }
 
-export const DUMMY_EMPLOYEE_DATA: employee[] = [
+export const DUMMY_EMPLOYEE_DATA: EmployeeType[] = [
    { name: 'Anna', surname: 'Kowalska', phone: '+48 512 100 001', email: 'anna.kowalska@example.com', active: true },
    { name: 'Piotr', surname: 'Nowak', phone: '+48 512 100 002', email: 'piotr.nowak@example.com', active: true },
    { name: 'Maria', surname: 'Wiśniewska', phone: '+48 512 100 003', email: 'maria.wisniewska@example.com', active: false },

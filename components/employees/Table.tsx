@@ -1,4 +1,4 @@
-import type { employee } from "@/lib/data"
+import type { EmployeeType } from "@/lib/data"
 
 const columnGrid = "grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(4.5rem,auto)]"
 
@@ -6,9 +6,13 @@ const headerCell = "px-4 pb-3 text-left text-sm font-medium text-text-700 "
 
 const bodyCell = "border-border-300 border-r px-4 py-4 text-left text-sm text-text-700 last:border-r-0"
 
-const Table = ({ employees }: { employees: employee[] }) => {
+interface TableProps {
+   employees: EmployeeType[]
+}
+
+const Table = ({ employees }: TableProps) => {
    return (
-      <div className="mt-10 w-full">
+      <div className="w-full">
          <div className={columnGrid}>
             <div className={headerCell}>Name</div>
             <div className={headerCell}>Surname</div>
