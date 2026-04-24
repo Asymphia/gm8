@@ -1,3 +1,5 @@
+"use client"
+
 import type { ComponentPropsWithoutRef } from "react"
 
 export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost"
@@ -26,12 +28,14 @@ const Button = ({
    size = "md",
    type = "button",
    children,
+   onClick,
    ...props
 }: ButtonProps) => {
    return (
       <button
          type={type}
          className={`transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${variantClass[variant]} ${sizeClass[size]} ${className}`.trim()}
+         onClick={onClick}
          {...props}
       >
          {children}
