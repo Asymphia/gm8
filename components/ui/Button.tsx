@@ -2,7 +2,7 @@
 
 import type { ComponentPropsWithoutRef } from "react"
 
-export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost"
+export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "warning"
 
 interface ButtonProps extends ComponentPropsWithoutRef<"button"> {
    variant?: ButtonVariant
@@ -12,8 +12,9 @@ interface ButtonProps extends ComponentPropsWithoutRef<"button"> {
 const variantClass = {
    primary: "bg-primary-500 text-white hover:bg-primary-700 active:bg-primary-700",
    secondary: "border border-border-300 bg-surface text-text-700 hover:bg-foreground",
-   outline: "border border-border-500 bg-background text-text-700 hover:bg-foreground",
-   ghost: "bg-transparent text-text-700 hover:bg-foreground"
+   outline: "border border-primary-500 bg-background text-primary-500 hover:bg-foreground",
+   ghost: "bg-transparent text-text-700 hover:bg-foreground",
+   warning: "border border-warning bg-background text-warning hover:bg-foreground"
 } as const satisfies Record<ButtonVariant, string>
 
 const sizeClass = {

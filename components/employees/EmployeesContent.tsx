@@ -1,5 +1,4 @@
 "use client"
-
 import Header from "@/components/employees/Header"
 import { MapPinIcon } from "@heroicons/react/24/outline"
 import Table from "@/components/employees/Table"
@@ -9,7 +8,7 @@ import Modal from "@/components/ui/Modal"
 import { useState } from "react"
 
 const EmployeesContent = () => {
-   const [open, setOpen] = useState(false)
+   const [open, setOpen] = useState<boolean>(false)
 
    return (
       <>
@@ -22,10 +21,18 @@ const EmployeesContent = () => {
          </div>
          <Modal isOpen={open} onClose={() => setOpen(false)}>
             <h2 className="text-text-700 text-xl font-medium">Add Employee</h2>
-            <p className="text-text-500 mt-2">Tu pójdzie formularz.</p>
-            <div className="mt-6 flex justify-end">
+            <div className="grid grid-cols-2 gap-2">
+               <input type="text" />
+               <input type="text" />
+               <input type="text" />
+               <input type="text" />
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-                  Close
+                  Cancel
+               </Button>
+               <Button type="button" variant="primary" onClick={() => setOpen(false)}>
+                  Confirm
                </Button>
             </div>
          </Modal>
