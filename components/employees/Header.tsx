@@ -10,9 +10,9 @@ interface HeaderProps {
 
 const Header = ({ title, icon, iconLabel }: HeaderProps) => {
    return (
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
          <PageHeader title={title} icon={icon} iconLabel={iconLabel} />
-         <div>
+         <div className="w-full sm:w-auto">
             <SearchBar />
          </div>
       </div>

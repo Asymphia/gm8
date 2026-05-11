@@ -12,8 +12,8 @@ interface TableProps {
 
 const Table = ({ employees }: TableProps) => {
    return (
-      <div className="w-full">
-         <div className={columnGrid}>
+      <div className="w-full overflow-x-auto">
+         <div className={`${columnGrid} min-w-[46rem]`}>
             <div className={headerCell}>Name</div>
             <div className={headerCell}>Surname</div>
             <div className={headerCell}>Phone</div>
@@ -21,7 +21,7 @@ const Table = ({ employees }: TableProps) => {
             <div className={`${headerCell} text-center`}>Active</div>
          </div>
 
-         <div className="divide-border-300 border-border-300 bg-background divide-y overflow-hidden rounded-md border">
+         <div className="divide-border-300 border-border-300 bg-background min-w-[46rem] divide-y overflow-hidden rounded-md border">
             {employees.map(value => (
                <div key={value.email} className={columnGrid}>
                   <div className={bodyCell}>{value.name}</div>

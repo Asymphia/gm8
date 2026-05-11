@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { DM_Sans } from "next/font/google"
 import "./globals.css"
 import { ReactNode } from "react"
+import AppShell from "@/components/layout/AppShell"
+import { OperationalProvider } from "@/components/operations/OperationalProvider"
 
 const DMSans = DM_Sans({
    variable: "--font-dm-sans",
@@ -16,7 +18,11 @@ export const metadata: Metadata = {
 const RootLayout = ({ children }: Readonly<{ children: ReactNode }>) => {
    return (
       <html lang="en" className={`${DMSans.variable}`}>
-         <body>{children}</body>
+         <body>
+            <AppShell>
+               <OperationalProvider>{children}</OperationalProvider>
+            </AppShell>
+         </body>
       </html>
    )
 }

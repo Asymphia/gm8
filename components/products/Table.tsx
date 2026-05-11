@@ -8,25 +8,33 @@ const bodyCell = "border-border-300 border-r px-4 py-4 text-left text-sm text-te
 
 interface TableProps {
    products: ProductCatalog[]
+   selectedProductNames: string[]
+   onToggleProduct: (productName: string) => void
 }
 
-const Table = ({ products }: TableProps) => {
+const Table = ({ products, selectedProductNames, onToggleProduct }: TableProps) => {
    return (
-      <div className="w-full">
-         <div className={columnGrid}>
+      <div className="w-full overflow-x-auto">
+         <div className={`${columnGrid} min-w-[42rem]`}>
             <div className={`${headerCell} flex justify-center`}>
-               <input type="checkbox" aria-label="Select all products" className="h-4 w-4 accent-primary-500" />
+               <span className="sr-only">Select product</span>
             </div>
             <div className={headerCell}>Name</div>
             <div className={headerCell}>Unit</div>
             <div className={`${headerCell} text-center`}>Is active</div>
          </div>
 
-         <div className="divide-border-300 border-border-300 bg-background divide-y overflow-hidden rounded-md border">
+         <div className="divide-border-300 border-border-300 bg-background min-w-[42rem] divide-y overflow-hidden rounded-md border">
             {products.map((value, index) => (
                <div key={`${value.name}-${index}`} className={columnGrid}>
                   <div className={`${bodyCell} flex justify-center`}>
-                     <input type="checkbox" aria-label={`Select ${value.name}`} className="h-4 w-4 accent-primary-500" />
+                     <input
+                        type="checkbox"
+                        checked={selectedProductNames.includes(value.name)}
+                        onChange={() => onToggleProduct(value.name)}
+                        aria-label={`Select ${value.name}`}
+                        className="h-4 w-4 accent-primary-500"
+                     />
                   </div>
                   <div className={bodyCell}>{value.name}</div>
                   <div className={bodyCell}>{value.unit}</div>
