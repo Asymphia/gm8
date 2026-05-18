@@ -9,7 +9,14 @@ import {
    useState,
    type ReactNode,
 } from "react"
-import { PLANNER_STORAGE_KEY, loadPlannerBrowser, savePlannerBrowser, seedPlannerPersisted, type PlannerShift } from "@/lib/schedule-planner-storage"
+import {
+   PLANNER_STORAGE_KEY,
+   loadPlannerBrowser,
+   notifyPlannerUpdated,
+   savePlannerBrowser,
+   seedPlannerPersisted,
+   type PlannerShift,
+} from "@/lib/schedule-planner-storage"
 
 interface SchedulePlannerContextValue {
    ready: boolean
@@ -47,6 +54,7 @@ export function SchedulePlannerProvider({ children }: { children: ReactNode }) {
    useEffect(() => {
       if (!ready) return
       savePlannerBrowser({ shifts, nextId })
+      notifyPlannerUpdated()
    }, [ready, shifts, nextId])
 
    useEffect(() => {

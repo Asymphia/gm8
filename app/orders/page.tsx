@@ -13,14 +13,14 @@ const OrdersPage = () => {
    const items = [
       {
          href: "/orders/register",
-         label: "Register order",
-         description: "Create drafts from the cookbook · Accept pulls stock FIFO.",
+         label: "Rejestracja zamówienia",
+         description: "Szkice z księgi przepisów · Przyjmij zużywa stan FIFO.",
          value: ready ? String(newCount) : "—",
       },
       {
          href: "/orders/list",
-         label: "Order list",
-         description: "Full queue with recipe names from your cookbook.",
+         label: "Lista zamówień",
+         description: "Pełna kolejka z nazwami przepisów z Twojej księgi.",
          value: ready ? String(orders.length) : "—",
       },
    ]
@@ -28,9 +28,9 @@ const OrdersPage = () => {
    return (
       <div className="space-y-6">
          <div>
-            <h1>Orders</h1>
+            <h1>Zamówienia</h1>
             <p className="text-text-500 mt-1">
-               Operational view for order registration — draft then accept when stock is confirmed.
+               Widok operacyjny rejestracji zamówień — szkic, potem przyjęcie po potwierdzeniu stanu.
             </p>
          </div>
          <HubNavigationGrid items={items} />

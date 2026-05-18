@@ -1,11 +1,13 @@
 "use client"
 
 import { useMemo, type RefObject } from "react"
+import { useMediaQuery } from "@/lib/use-media-query"
 import FullCalendar from "@fullcalendar/react"
 import type { DateSelectArg, DatesSetArg, EventClickArg, EventInput } from "@fullcalendar/core"
 import dayGridPlugin from "@fullcalendar/daygrid"
 import timeGridPlugin from "@fullcalendar/timegrid"
 import interactionPlugin from "@fullcalendar/interaction"
+import plLocale from "@fullcalendar/core/locales/pl"
 
 import type { PlannerShift } from "@/lib/schedule-planner-storage"
 
@@ -15,9 +17,7 @@ interface EmployeeShiftCalendarProps {
    plannerShifts: PlannerShift[]
    calendarRef?: RefObject<FullCalendar | null>
    onRangeChange?: (arg: DatesSetArg) => void
-   /** Wybór zakresu czasu jednego kalendarzowego dnia → nowa zmiana */
    onSelectSlot?: (start: Date, end: Date) => void
-   /** Klik w istniejący blok */
    onEventClickShift?: (shift: PlannerShift) => void
 }
 
@@ -32,11 +32,13 @@ const EmployeeShiftCalendar = ({
    onSelectSlot,
    onEventClickShift,
 }: EmployeeShiftCalendarProps) => {
+   const isCompact = useMediaQuery("(max-width: 767px)")
+
    const events: EventInput[] = useMemo(
       () =>
          plannerShifts.map(s => ({
             id: String(s.id),
-            title: s.note?.trim() ? s.note : `Shift (${s.start_time}–${s.end_time})`,
+            title: s.note?.trim() ? s.note : `Zmiana (${s.start_time}–${s.end_time})`,
             start: toLocalDateTime(s.date, s.start_time),
             end: toLocalDateTime(s.date, s.end_time),
             extendedProps: { shift: s } satisfies { shift: PlannerShift },
@@ -73,16 +75,18 @@ const EmployeeShiftCalendar = ({
    }
 
    return (
-      <div className="fc-wrapper h-[clamp(560px,70vh,900px)] w-full [&_.fc-scrollgrid-sync-table]:border-border-300 [&_.fc]:text-text-700 [&_.fc-toolbar-title]:text-base [&_.fc-toolbar-title]:font-semibold">
+      <div className="fc-wrapper h-[clamp(420px,65vh,900px)] w-full min-w-0 [&_.fc-scrollgrid-sync-table]:border-border-300 [&_.fc]:text-text-700 [&_.fc-toolbar-title]:text-base [&_.fc-toolbar-title]:font-semibold">
          <FullCalendar
             ref={calendarRef}
             plugins={PLUGINS}
-            headerToolbar={{
-               left: "prev,today,next",
-               center: "title",
-               right: "timeGridDay,timeGridWeek",
-            }}
-            initialView="timeGridWeek"
+            locale={plLocale}
+            buttonText={{ today: "Dziś", day: "Dzień", week: "Tydzień" }}
+            headerToolbar={
+               isCompact
+                  ? { left: "prev,next", center: "title", right: "today" }
+                  : { left: "prev,today,next", center: "title", right: "timeGridDay,timeGridWeek" }
+            }
+            initialView={isCompact ? "timeGridDay" : "timeGridWeek"}
             firstDay={1}
             selectable={Boolean(onSelectSlot)}
             selectMirror={Boolean(onSelectSlot)}

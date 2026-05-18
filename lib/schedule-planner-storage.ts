@@ -8,7 +8,14 @@ export interface PlannerPersisted {
    nextId: number
 }
 
-export const PLANNER_STORAGE_KEY = "gm8_employee_shift_planner_v1"
+export const PLANNER_STORAGE_KEY = "gm8_employee_shift_planner_v2"
+
+export const PLANNER_UPDATED_EVENT = "gm8:planner-updated"
+
+export function notifyPlannerUpdated(): void {
+   if (typeof window === "undefined") return
+   window.dispatchEvent(new Event(PLANNER_UPDATED_EVENT))
+}
 
 function sanitizeShift(raw: unknown): PlannerShift | null {
    if (raw === null || typeof raw !== "object") return null
@@ -88,6 +95,6 @@ export function savePlannerBrowser(data: PlannerPersisted): void {
       if (typeof window === "undefined") return
       window.localStorage.setItem(PLANNER_STORAGE_KEY, JSON.stringify(data))
    } catch {
-      /* ignore quota */
+      return
    }
 }

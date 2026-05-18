@@ -3,70 +3,80 @@
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
    ArchiveBoxIcon,
    BookmarkIcon,
-   BriefcaseIcon,
    CalendarDaysIcon,
    CubeIcon,
    HomeIcon,
    Bars3Icon,
    XMarkIcon,
    MegaphoneIcon,
-   Squares2X2Icon,
+   ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline"
+import { useAuth } from "@/components/auth/AuthProvider"
+import { appRoleLabel, initials } from "@/lib/auth"
+import type { AppRole } from "@/lib/auth"
 
 const MAIN_NAV_ITEMS = [
-   { href: "/", label: "Dashboard", icon: HomeIcon },
-   { href: "/notifications", label: "Notifications", icon: MegaphoneIcon },
-   { href: "/warehouse", label: "Warehouse", icon: CubeIcon },
-   { href: "/recipes", label: "Recipes", icon: BookmarkIcon },
-   { href: "/orders", label: "Orders", icon: ArchiveBoxIcon },
-   { href: "/schedule", label: "Harmonogram", icon: CalendarDaysIcon },
+   { href: "/", label: "Pulpit", icon: HomeIcon, shortLabel: "Pulpit" },
+   { href: "/notifications", label: "Powiadomienia", icon: MegaphoneIcon, shortLabel: "Ogłoszenia" },
+   { href: "/warehouse", label: "Magazyn", icon: CubeIcon, shortLabel: "Magazyn" },
+   { href: "/recipes", label: "Przepisy", icon: BookmarkIcon, shortLabel: "Przepisy" },
+   { href: "/orders", label: "Zamówienia", icon: ArchiveBoxIcon, shortLabel: "Zamów." },
+   { href: "/schedule", label: "Harmonogram", icon: CalendarDaysIcon, shortLabel: "Grafik" },
 ]
 
 const WAREHOUSE_SUB_ITEMS = [
-   { href: "/warehouse", label: "Overview" },
-   { href: "/warehouse/products", label: "Products" },
-   { href: "/warehouse/stock", label: "Stock levels" },
-   { href: "/warehouse/deliveries", label: "Deliveries" },
-   { href: "/warehouse/expiration", label: "Expiration" },
-   { href: "/warehouse/stocktaking", label: "Stocktaking" },
-   { href: "/warehouse/stocktaking/inventories", label: "Inventory list" },
+   { href: "/warehouse", label: "Przegląd" },
+   { href: "/warehouse/products", label: "Produkty" },
+   { href: "/warehouse/stock", label: "Stany magazynowe" },
+   { href: "/warehouse/deliveries", label: "Dostawy" },
+   { href: "/warehouse/expiration", label: "Ważność" },
+   { href: "/warehouse/stocktaking", label: "Inwentaryzacja" },
+   { href: "/warehouse/stocktaking/inventories", label: "Lista inwentaryzacji" },
 ]
 
 const RECIPES_SUB_ITEMS = [
-   { href: "/recipes", label: "Overview" },
-   { href: "/recipes/definitions", label: "All recipes" },
-   { href: "/recipes/new", label: "New recipe" },
-   { href: "/recipes/templates", label: "Templates" },
-   { href: "/recipes/editing", label: "Lifecycle" },
+   { href: "/recipes", label: "Przegląd" },
+   { href: "/recipes/definitions", label: "Wszystkie przepisy" },
+   { href: "/recipes/new", label: "Nowy przepis" },
+   { href: "/recipes/templates", label: "Szablony" },
+   { href: "/recipes/editing", label: "Cykl życia" },
 ]
 
 const ORDERS_SUB_ITEMS = [
-   { href: "/orders", label: "Overview" },
-   { href: "/orders/register", label: "Register order" },
-   { href: "/orders/list", label: "Order list" },
+   { href: "/orders", label: "Przegląd" },
+   { href: "/orders/register", label: "Rejestracja zamówienia" },
+   { href: "/orders/list", label: "Lista zamówień" },
 ]
 
-const SCHEDULE_SUB_ITEMS = [
-   { href: "/schedule", label: "Harmonogram" },
-   { href: "/schedule/plan", label: "Kalendarz zmian" },
-   { href: "/schedule/employees", label: "Pracownicy" },
-]
+function scheduleSubItems(role: AppRole) {
+   const base = [{ href: "/schedule", label: "Harmonogram" }]
+   if (role === "owner") {
+      return [
+         ...base,
+         { href: "/schedule/plan", label: "Kalendarz zmian" },
+         { href: "/schedule/employees", label: "Pracownicy" },
+      ]
+   }
+   return base
+}
 
 const NOTIFICATIONS_SUB_ITEMS = [
-   { href: "/notifications", label: "Announcements" },
-   { href: "/notifications/board", label: "Board" },
+   { href: "/notifications", label: "Ogłoszenia" },
+   { href: "/notifications/board", label: "Tablica" },
 ]
 
-const MODULE_SUB_NAV: Partial<Record<string, { href: string; label: string }[]>> = {
-   "/warehouse": WAREHOUSE_SUB_ITEMS,
-   "/recipes": RECIPES_SUB_ITEMS,
-   "/orders": ORDERS_SUB_ITEMS,
-   "/schedule": SCHEDULE_SUB_ITEMS,
-   "/notifications": NOTIFICATIONS_SUB_ITEMS,
+function moduleSubNav(role: AppRole): Partial<Record<string, { href: string; label: string }[]>> {
+   return {
+      "/warehouse": WAREHOUSE_SUB_ITEMS,
+      "/recipes": RECIPES_SUB_ITEMS,
+      "/orders": ORDERS_SUB_ITEMS,
+      "/schedule": scheduleSubItems(role),
+      "/notifications": NOTIFICATIONS_SUB_ITEMS,
+   }
 }
 
 interface AppShellProps {
@@ -75,143 +85,203 @@ interface AppShellProps {
 
 const AppShell = ({ children }: AppShellProps) => {
    const pathname = usePathname()
-   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+   const { session, logout } = useAuth()
+   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+
+   const subNav = useMemo(() => moduleSubNav(session?.appRole ?? "employee"), [session?.appRole])
+
+   useEffect(() => {
+      if (!isDrawerOpen) return
+      const prev = document.body.style.overflow
+      document.body.style.overflow = "hidden"
+      return () => {
+         document.body.style.overflow = prev
+      }
+   }, [isDrawerOpen])
 
    const isMainItemActive = (href: string) => {
       if (href === "/") return pathname === "/"
       return pathname.startsWith(href)
    }
 
-   return (
-      <div className="min-h-screen bg-foreground p-2 sm:p-3">
-         <div className="flex min-h-[calc(100vh-0.5rem)] gap-3 sm:min-h-[calc(100vh-0.75rem)]">
-            <aside className="border-border-300 bg-background hidden w-72 rounded-md border p-4 shadow-sm md:flex md:flex-col">
-               <p className="text-text-300 mb-4 text-sm">Storage</p>
-               <div className="mb-5 flex items-center justify-between rounded-md px-2 py-3">
-                  <p className="text-text-700 text-4xl leading-none font-semibold tracking-tight">
-                     GM<span className="text-primary-500">8</span>
-                  </p>
-                  <button type="button" className="text-text-500 rounded-sm p-1">
-                     <BriefcaseIcon className="h-5 w-5" />
-                  </button>
-               </div>
-               <nav className="flex-1 space-y-1">
-                  {MAIN_NAV_ITEMS.map(item => {
-                     const active = isMainItemActive(item.href)
-                     const Icon = item.icon
-                     return (
-                        <div key={item.href}>
+   const userInitials = session ? initials(session) : "?"
+   const roleLabel = session ? appRoleLabel(session.appRole) : ""
+
+   const handleLogout = () => {
+      logout()
+      window.location.href = "/login"
+   }
+
+   const renderNav = (onNavigate?: () => void, compact?: boolean) =>
+      MAIN_NAV_ITEMS.map(item => {
+         const active = isMainItemActive(item.href)
+         const Icon = item.icon
+         const subs = subNav[item.href]
+         return (
+            <div key={item.href}>
+               <Link
+                  href={item.href}
+                  onClick={onNavigate}
+                  className={`flex items-center gap-2 rounded-sm px-3 py-2.5 text-sm transition-colors ${
+                     active ? "bg-foreground text-text-700" : "text-text-500 hover:bg-foreground hover:text-text-700"
+                  }`}
+               >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  <span>{compact ? item.shortLabel : item.label}</span>
+               </Link>
+               {active && subs && !compact ? (
+                  <div className="ml-9 mt-1 space-y-0.5 pb-1">
+                     {subs.map(subItem => {
+                        const subActive = pathname === subItem.href
+                        return (
                            <Link
-                              href={item.href}
-                              className={`flex items-center gap-2 rounded-sm px-3 py-2 text-sm transition-colors ${
-                                 active ? "bg-foreground text-text-700" : "text-text-500 hover:bg-foreground hover:text-text-700"
+                              key={subItem.href}
+                              href={subItem.href}
+                              onClick={onNavigate}
+                              className={`block rounded-sm px-2 py-1.5 text-xs ${
+                                 subActive
+                                    ? "text-primary-500 font-medium"
+                                    : "text-text-500 hover:text-text-700"
                               }`}
                            >
-                              <Icon className="h-4 w-4 shrink-0" />
-                              <span>{item.label}</span>
+                              {subItem.label}
                            </Link>
-                           {active && MODULE_SUB_NAV[item.href] ? (
-                              <div className="ml-9 mt-1 space-y-1">
-                                 {MODULE_SUB_NAV[item.href]!.map(subItem => {
-                                    const subActive = pathname === subItem.href
-                                    return (
-                                       <Link
-                                          key={subItem.href}
-                                          href={subItem.href}
-                                          className={`block rounded-sm px-2 py-1 text-xs ${
-                                             subActive
-                                                ? "text-primary-500 font-medium"
-                                                : "text-text-500 hover:text-text-700"
-                                          }`}
-                                       >
-                                          {subItem.label}
-                                       </Link>
-                                    )
-                                 })}
-                              </div>
-                           ) : null}
-                        </div>
-                     )
-                  })}
-               </nav>
-               <div className="border-border-300 mt-4 border-t pt-4">
-                  <div className="flex items-center gap-3">
-                     <div className="bg-foreground text-text-700 flex h-10 w-10 items-center justify-center rounded-full text-xs font-semibold">
-                        SZ
-                     </div>
-                     <div>
-                        <p className="text-text-700 text-sm font-medium">Super Szop</p>
-                        <p className="text-text-300 text-xs">superSzop@onet.eu</p>
-                     </div>
+                        )
+                     })}
                   </div>
-                  <button
-                     type="button"
-                     className="text-text-500 mt-3 inline-flex items-center gap-1 text-xs hover:text-text-700"
-                  >
-                     <Squares2X2Icon className="h-3.5 w-3.5" />
-                     Log out
-                  </button>
-               </div>
+               ) : null}
+            </div>
+         )
+      })
+
+   return (
+      <div className="min-h-screen bg-foreground">
+         <div className="mx-auto flex min-h-screen max-w-[1600px] p-2 sm:p-3 md:min-h-[calc(100vh-0.75rem)]">
+            <aside className="border-border-300 bg-background sticky top-3 hidden h-[calc(100vh-1.5rem)] w-64 shrink-0 flex-col rounded-md border p-4 shadow-sm lg:flex xl:w-72">
+               <p className="text-text-300 mb-3 text-xs font-medium tracking-wide uppercase">GastroM8</p>
+               <p className="text-text-700 mb-5 text-3xl leading-none font-semibold tracking-tight xl:text-4xl">
+                  GM<span className="text-primary-500">8</span>
+               </p>
+               <nav className="flex-1 space-y-0.5 overflow-y-auto">{renderNav()}</nav>
+               {session ? (
+                  <div className="border-border-300 mt-4 shrink-0 border-t pt-4">
+                     <div className="flex items-center gap-3">
+                        <div className="bg-foreground text-text-700 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-semibold">
+                           {userInitials}
+                        </div>
+                        <div className="min-w-0">
+                           <p className="text-text-700 truncate text-sm font-medium">
+                              {session.firstName} {session.lastName}
+                           </p>
+                           <p className="text-text-300 truncate text-xs">
+                              {roleLabel}
+                           </p>
+                        </div>
+                     </div>
+                     <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="text-text-500 hover:text-text-700 mt-3 inline-flex items-center gap-1.5 text-xs"
+                     >
+                        <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                        Wyloguj
+                     </button>
+                  </div>
+               ) : null}
             </aside>
 
             <div className="flex min-w-0 flex-1 flex-col">
-               <header className="border-border-300 bg-background rounded-md border p-3 shadow-sm md:hidden">
-                  <div className="flex items-center justify-between">
-                     <p className="text-text-700 text-lg font-semibold">
-                        GM<span className="text-primary-500">8</span>
-                     </p>
+               <header className="border-border-300 bg-background sticky top-0 z-30 flex items-center justify-between gap-2 rounded-md border px-3 py-2.5 shadow-sm lg:hidden">
+                  <Link href="/" className="text-text-700 text-lg font-semibold">
+                     GM<span className="text-primary-500">8</span>
+                  </Link>
+                  <div className="flex items-center gap-1">
+                     {session ? (
+                        <span className="text-text-300 hidden max-w-[7rem] truncate text-xs sm:inline">
+                           {session.firstName}
+                        </span>
+                     ) : null}
                      <button
                         type="button"
-                        aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
-                        onClick={() => setIsMobileMenuOpen(previous => !previous)}
-                        className="text-text-700 hover:bg-foreground rounded-sm p-1.5"
+                        aria-label={isDrawerOpen ? "Zamknij menu" : "Menu i konto"}
+                        onClick={() => setIsDrawerOpen(open => !open)}
+                        className="text-text-700 hover:bg-foreground rounded-sm p-2"
                      >
-                        {isMobileMenuOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
+                        {isDrawerOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
                      </button>
                   </div>
-                  {isMobileMenuOpen ? (
-                     <nav className="mt-3 space-y-1 border-t border-border-300 pt-3">
-                        {MAIN_NAV_ITEMS.map(item => {
-                           const active = isMainItemActive(item.href)
-                           const subs = MODULE_SUB_NAV[item.href]
-                           return (
-                              <div key={item.href} className="space-y-0.5">
-                                 <Link
-                                    href={item.href}
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className={`block rounded-sm px-3 py-2 text-sm ${
-                                       active ? "bg-primary-500 text-white" : "text-text-500 hover:bg-foreground hover:text-text-700"
-                                    }`}
-                                 >
-                                    {item.label}
-                                 </Link>
-                                 {subs && active ? (
-                                    <div className="border-border-300 mb-2 ml-4 space-y-0.5 border-l pl-3">
-                                       {subs.map(subItem => (
-                                          <Link
-                                             key={subItem.href}
-                                             href={subItem.href}
-                                             onClick={() => setIsMobileMenuOpen(false)}
-                                             className={`block rounded-sm px-2 py-1.5 text-xs ${
-                                                pathname === subItem.href
-                                                   ? "text-primary-600 font-semibold"
-                                                   : "text-text-500 hover:text-text-700"
-                                             }`}
-                                          >
-                                             {subItem.label}
-                                          </Link>
-                                       ))}
-                                    </div>
-                                 ) : null}
-                              </div>
-                           )
-                        })}
-                     </nav>
-                  ) : null}
                </header>
-               <main className="mt-3 min-w-0 flex-1 rounded-md bg-transparent px-2 py-2 sm:px-3 sm:py-3">{children}</main>
+
+               <main className="app-main-pad mt-2 min-w-0 flex-1 px-1 py-2 sm:mt-3 sm:px-2 sm:py-3 lg:mt-0 lg:pb-0">
+                  {children}
+               </main>
             </div>
          </div>
+
+         {isDrawerOpen ? (
+            <>
+               <button
+                  type="button"
+                  aria-label="Zamknij menu"
+                  className="fixed inset-0 z-40 bg-overlay lg:hidden"
+                  onClick={() => setIsDrawerOpen(false)}
+               />
+               <aside className="border-border-300 bg-background fixed inset-y-0 right-0 z-50 flex w-[min(100%,20rem)] flex-col border-l p-4 shadow-lg lg:hidden">
+                  <div className="mb-4 flex items-center justify-between">
+                     <p className="text-text-700 font-semibold">Menu</p>
+                     <button
+                        type="button"
+                        aria-label="Zamknij"
+                        onClick={() => setIsDrawerOpen(false)}
+                        className="text-text-500 rounded-sm p-1"
+                     >
+                        <XMarkIcon className="h-5 w-5" />
+                     </button>
+                  </div>
+                  <nav className="flex-1 space-y-0.5 overflow-y-auto">{renderNav(() => setIsDrawerOpen(false))}</nav>
+                  {session ? (
+                     <div className="border-border-300 mt-4 border-t pt-4">
+                        <p className="text-text-700 text-sm font-medium">
+                           {session.firstName} {session.lastName}
+                        </p>
+                        <p className="text-text-300 text-xs">{session.email}</p>
+                        <p className="text-text-300 mt-0.5 text-xs">{roleLabel}</p>
+                        <button
+                           type="button"
+                           onClick={handleLogout}
+                           className="text-text-500 hover:text-text-700 mt-3 flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm"
+                        >
+                           <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                           Wyloguj
+                        </button>
+                     </div>
+                  ) : null}
+               </aside>
+            </>
+         ) : null}
+
+         <nav
+            className="border-border-300 bg-background fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_var(--shadow-color-300)] lg:hidden"
+            aria-label="Główna nawigacja"
+         >
+            {MAIN_NAV_ITEMS.map(item => {
+               const active = isMainItemActive(item.href)
+               const Icon = item.icon
+               return (
+                  <Link
+                     key={item.href}
+                     href={item.href}
+                     onClick={() => setIsDrawerOpen(false)}
+                     className={`flex flex-col items-center justify-center gap-0.5 rounded-sm px-0.5 py-1.5 text-[10px] leading-tight font-medium transition-colors ${
+                        active ? "text-primary-500" : "text-text-500"
+                     }`}
+                  >
+                     <Icon className={`h-5 w-5 shrink-0 ${active ? "text-primary-500" : ""}`} />
+                     <span className="max-w-full truncate">{item.shortLabel}</span>
+                  </Link>
+               )
+            })}
+         </nav>
       </div>
    )
 }

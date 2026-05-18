@@ -10,23 +10,23 @@ const RecipeTemplatesPage = () => {
    const { ready, catalog, templates, createFromTemplate } = useRecipeCatalog()
 
    const handleApply = (baseRecipeId: number, fallbackName: string) => {
-      const id = createFromTemplate(baseRecipeId, `${fallbackName} (draft)`)
+      const id = createFromTemplate(baseRecipeId, `${fallbackName} (szkic)`)
       if (id < 1) return
       router.push(`/recipes/${id}/edit`)
    }
 
    if (!ready) {
-      return <p className="text-text-500 text-sm">Loading cookbook…</p>
+      return <p className="text-text-500 text-sm">Ładowanie księgi przepisów…</p>
    }
 
    return (
       <div className="space-y-6">
-         <BackLink href="/recipes" label="Back to recipes hub" />
+         <BackLink href="/recipes" label="Powrót do przepisów" />
          <div>
-            <h1>Recipe templates</h1>
+            <h1>Szablony przepisów</h1>
             <p className="text-text-500 mt-1 max-w-3xl">
-               Blueprints duplicate an existing mocked recipe skeleton with all ingredient lines preserved. Opens in the recipe
-               builder so you can rename and adjust quantities. Mock only — saves in browser storage under this prototype.
+               Szablony klonują istniejący szkielet przepisu demo wraz ze wszystkimi liniami składników. Otwierają edytor, w
+               którym możesz zmienić nazwę i ilości. Tylko mock — zapis w localStorage przeglądarki w tym prototypie.
             </p>
          </div>
 
@@ -42,14 +42,14 @@ const RecipeTemplatesPage = () => {
                      <h2 className="text-text-700 font-medium">{template.title}</h2>
                      <p className="text-text-500 mt-2 flex-1 text-sm">{template.description}</p>
                      <p className="text-text-300 mt-2 text-xs">
-                        Based on demo recipe: {baseRecipe} · {lineCount} ingredients
+                        Na podstawie przepisu demo: {baseRecipe} · {lineCount} składników
                      </p>
                      <Button
                         type="button"
                         className="mt-4 self-start"
                         onClick={() => handleApply(template.baseRecipeId, template.title)}
                      >
-                        Use template · open builder
+                        Użyj szablonu · otwórz edytor
                      </Button>
                   </article>
                )

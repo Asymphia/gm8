@@ -9,12 +9,12 @@ export interface HubNavigationItem {
 
 export function HubNavigationGrid({ items }: { items: HubNavigationItem[] }) {
    return (
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
          {items.map(link => (
             <Link
                key={link.href}
                href={link.href}
-               className="group rounded-sm border border-border-300 bg-background p-4 transition-colors hover:border-primary-300 hover:bg-foreground"
+               className="group rounded-sm border border-border-300 bg-background p-4 transition-colors active:scale-[0.99] hover:border-primary-300 hover:bg-foreground"
             >
                <div className="mb-2 flex items-center justify-between gap-2">
                   <p className="text-text-700 group-hover:text-primary-500 text-sm font-medium">{link.label}</p>

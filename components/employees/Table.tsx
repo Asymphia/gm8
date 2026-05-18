@@ -1,10 +1,5 @@
 import type { EmployeeType } from "@/lib/data"
-
-const columnGrid = "grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(4.5rem,auto)]"
-
-const headerCell = "px-4 pb-3 text-left text-sm font-medium text-text-700 "
-
-const bodyCell = "border-border-300 border-r px-4 py-4 text-left text-sm text-text-700 last:border-r-0"
+import { ResponsiveDataView } from "@/components/ui/ResponsiveDataView"
 
 interface TableProps {
    employees: EmployeeType[]
@@ -12,27 +7,28 @@ interface TableProps {
 
 const Table = ({ employees }: TableProps) => {
    return (
-      <div className="w-full overflow-x-auto">
-         <div className={`${columnGrid} min-w-[46rem]`}>
-            <div className={headerCell}>Name</div>
-            <div className={headerCell}>Surname</div>
-            <div className={headerCell}>Phone</div>
-            <div className={headerCell}>Email</div>
-            <div className={`${headerCell} text-center`}>Active</div>
-         </div>
-
-         <div className="divide-border-300 border-border-300 bg-background min-w-[46rem] divide-y overflow-hidden rounded-md border">
-            {employees.map(value => (
-               <div key={value.email} className={columnGrid}>
-                  <div className={bodyCell}>{value.name}</div>
-                  <div className={bodyCell}>{value.surname}</div>
-                  <div className={bodyCell}>{value.phone}</div>
-                  <div className={bodyCell}>{value.email}</div>
-                  <div className={`${bodyCell} text-center`}>{value.active ? "Yes" : "No"}</div>
-               </div>
-            ))}
-         </div>
-      </div>
+      <ResponsiveDataView
+         rows={employees}
+         rowKey={row => row.email}
+         emptyMessage="Brak pracowników na liście."
+         desktopGridClass="grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_5rem]"
+         desktopMinWidth="min-w-[46rem]"
+         columns={[
+            { id: "name", header: "Imię", cell: r => r.name },
+            { id: "surname", header: "Nazwisko", cell: r => r.surname },
+            { id: "phone", header: "Telefon", cell: r => <span className="tabular-nums">{r.phone}</span> },
+            { id: "email", header: "E-mail", cell: r => <span className="break-all">{r.email}</span> },
+            {
+               id: "active",
+               header: "Aktywny",
+               cell: r => (
+                  <span className={r.active ? "text-primary-500 font-medium" : "text-text-300"}>
+                     {r.active ? "Tak" : "Nie"}
+                  </span>
+               ),
+            },
+         ]}
+      />
    )
 }
 

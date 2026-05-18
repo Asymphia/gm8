@@ -17,37 +17,37 @@ const RecipesHubPage = () => {
    const items = [
       {
          href: "/recipes/definitions",
-         label: "All recipes",
-         description: "Table of dishes and ingredient line counts per recipe.",
+         label: "Wszystkie przepisy",
+         description: "Tabela dań i liczby linii składników na przepis.",
          value: ready ? String(totalDishes) : "…",
       },
       {
          href: "/recipes/new",
-         label: "Create recipe",
-         description: "Multiple catalog products per dish; quantity per portion.",
-         value: "New",
+         label: "Utwórz przepis",
+         description: "Wiele produktów z katalogu na danie; ilość na porcję.",
+         value: "Nowy",
       },
       {
          href: "/recipes/templates",
-         label: "Templates",
-         description: "Clone seeded skeletons (pasta, soup, salad) into editable drafts.",
+         label: "Szablony",
+         description: "Sklonuj szkielety (makaron, zupa, sałatka) do edycji.",
          value: String(RECIPE_TEMPLATES.length),
       },
       {
          href: "/recipes/editing",
-         label: "Lifecycle",
-         description: "Show / hide recipes before they appear in order pickers.",
-         value: ready ? `${listed} active` : "…",
+         label: "Cykl życia",
+         description: "Pokaż / ukryj przepisy przed pojawieniem się w zamówieniach.",
+         value: ready ? `${listed} aktywnych` : "…",
       },
    ]
 
    return (
       <div className="space-y-6">
          <div>
-            <h1>Recipes</h1>
+            <h1>Przepisy</h1>
             <p className="text-text-500 mt-1 max-w-3xl">
-               Same card hub as Warehouse. Each dish has many ingredient lines ({ready ? ingredientLinks : "…"} links in your
-               cookbook); active recipes: {ready ? listed : "…"}.
+               Ten sam układ kart co Magazyn. Każde danie ma wiele linii składników ({ready ? ingredientLinks : "…"} w Twojej
+               księdze); aktywnych przepisów: {ready ? listed : "…"}.
             </p>
          </div>
          <HubNavigationGrid items={items} />

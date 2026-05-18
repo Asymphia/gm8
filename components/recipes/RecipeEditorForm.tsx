@@ -46,7 +46,7 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
 
    const products = mockDb.product_catalog.filter(p => p.is_active)
 
-   const title = mode === "create" ? "New recipe" : `Edit recipe #${recipeId}`
+   const title = mode === "create" ? "Nowy przepis" : `Edytuj przepis #${recipeId}`
 
    const productOptions = useMemo(
       () =>
@@ -58,15 +58,15 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
    )
 
    if (!ready) {
-      return <p className="text-text-500 text-sm">Loading cookbook…</p>
+      return <p className="text-text-500 text-sm">Ładowanie księgi przepisów…</p>
    }
 
    if (mode === "edit" && recipeId !== null && !existing) {
       return (
          <div className="rounded-sm border border-border-300 bg-background p-6">
-            <p className="text-text-700 font-medium">Recipe not found</p>
+            <p className="text-text-700 font-medium">Nie znaleziono przepisu</p>
             <Button type="button" className="mt-4" variant="outline" onClick={() => router.push(cancelHref)}>
-               Back
+               Wstecz
             </Button>
          </div>
       )
@@ -74,7 +74,7 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
 
    const handleAddRow = () => setLines(previous => [...previous, newLineRow()])
 
-   const handleRemoveRow = (key: string) => setLines(previous => (previous.length > 1 ? previous.filter(row => row.key !== key) : previous))
+   const handleUsuńRow = (key: string) => setLines(previous => (previous.length > 1 ? previous.filter(row => row.key !== key) : previous))
 
    const handleSave = () => {
       setError(null)
@@ -85,15 +85,15 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
          lines: lines.map(l => ({ product_id: l.product_id, quantity_per_portion: l.quantity_per_portion })),
       })
       if (id === -1) {
-         setError("Enter a recipe name.")
+         setError("Podaj nazwę przepisu.")
          return
       }
       if (id === -2) {
-         setError("Add at least one ingredient line with quantity greater than zero.")
+         setError("Dodaj co najmniej jedną linię składnika z ilością większą od zera.")
          return
       }
       if (id === -3) {
-         setError("Each ingredient can appear only once; remove duplicates.")
+         setError("Każdy składnik może wystąpić tylko raz — usuń duplikaty.")
          return
       }
       router.push(`/recipes/${id}`)
@@ -104,20 +104,20 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
          <header>
             <h1 className="text-text-700">{title}</h1>
             <p className="text-text-500 mt-1 text-sm">
-               One recipe = <span className="text-text-700">many products</span>: add a line per ingredient.{" "}
-               <span className="text-text-700">Quantity per portion</span> is how much of that product one portion of the dish
+               One recipe = <span className="text-text-700">wiele produktów</span>: add a line per ingredient.{" "}
+               <span className="text-text-700">Ilość na porcję</span> is how much of that product one portion of the dish
                consumes; orders multiply it by portions and the operations layer subtracts stock when you accept the order.
-               Mock only — persists in browser storage within this prototype.
+               Tylko mock — zapis w localStorage przeglądarki w tym prototypie.
             </p>
          </header>
 
          <section className="space-y-3 rounded-sm border border-border-300 bg-background p-4">
             <label className="flex flex-col gap-1">
-               <span className="text-text-700 text-sm font-medium">Recipe name</span>
+               <span className="text-text-700 text-sm font-medium">Nazwa przepisu</span>
                <input
                   value={name}
                   onChange={e => setName(e.target.value)}
-                  placeholder="e.g. Daily lunch special"
+                  placeholder="np. Danie dnia"
                   className="border-border-300 text-text-700 focus:border-primary-500 rounded-sm border px-3 py-2 text-sm outline-none"
                />
             </label>
@@ -128,15 +128,15 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
                   onChange={e => setIsActive(e.target.checked)}
                   className="h-4 w-4 accent-primary-500"
                />
-               Active (visible when matching orders/menu)
+               Aktywny (widoczny przy zamówieniach / w menu)
             </label>
          </section>
 
          <section className="rounded-sm border border-border-300 bg-background p-4">
             <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-               <p className="text-text-700 text-sm font-medium">Ingredients · quantity per portion</p>
+               <p className="text-text-700 text-sm font-medium">Składniki · ilość na porcję</p>
                <Button type="button" variant="outline" size="sm" onClick={handleAddRow}>
-                  Add product line
+                  Dodaj linię produktu
                </Button>
             </div>
 
@@ -177,8 +177,8 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
                         />
                         <span className="text-text-500 text-xs">{products.find(pr => pr.id === line.product_id)?.unit ?? ""}</span>
                      </div>
-                     <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => handleRemoveRow(line.key)}>
-                        Remove
+                     <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => handleUsuńRow(line.key)}>
+                        Usuń
                      </Button>
                   </div>
                ))}
@@ -189,10 +189,10 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
 
          <div className="flex flex-wrap gap-2">
             <Button type="button" variant="outline" onClick={() => router.push(cancelHref)}>
-               Cancel
+               Anuluj
             </Button>
             <Button type="button" onClick={handleSave}>
-               {mode === "create" ? "Create recipe" : "Save changes"}
+               {mode === "create" ? "Utwórz przepis" : "Zapisz zmiany"}
             </Button>
          </div>
       </div>

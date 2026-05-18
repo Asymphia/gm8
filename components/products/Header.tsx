@@ -25,18 +25,18 @@ const Header = ({ title, icon, iconLabel, selectedProducts }: HeaderProps) => {
          <PageHeader title={title} icon={icon} iconLabel={iconLabel} />
          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setIsEditOpen(true)} disabled={!selectedProduct}>
-               Edit product
+               Edytuj produkt
             </Button>
             <QuickActionModal
-               triggerLabel="Delete products"
-               title="Delete Products"
-               cancelLabel="Cancel"
+               triggerLabel="Usuń produkty"
+               title="Usuń produkty"
+               cancelLabel="Anuluj"
                prepend={
                   selectedProducts.length === 0 ? (
-                     <p>Select rows in the table first.</p>
+                     <p>Najpierw zaznacz wiersze w tabeli.</p>
                   ) : (
                      <div>
-                        <p className="text-text-700 mb-2 text-sm font-medium">Selected ({selectedProducts.length}):</p>
+                        <p className="text-text-700 mb-2 text-sm font-medium">Zaznaczone ({selectedProducts.length}):</p>
                         <ul className="text-text-500 list-disc space-y-1 pl-4 text-sm">
                            {selectedProducts.map(p => (
                               <li key={p.name}>
@@ -47,23 +47,23 @@ const Header = ({ title, icon, iconLabel, selectedProducts }: HeaderProps) => {
                      </div>
                   )
                }
-               description="Mock confirmation — no database call."
+               description="Potwierdzenie mock — bez zapisu do bazy."
                triggerVariant="warning"
                triggerDisabled={isDeleteDisabled}
-               confirmLabel="Delete selected"
-               fields={[{ name: "reason", label: "Reason (mock)", placeholder: "Optional note" }]}
+               confirmLabel="Usuń zaznaczone"
+               fields={[{ name: "reason", label: "Powód (mock)", placeholder: "Opcjonalna notatka" }]}
                onConfirm={() => undefined}
             />
             <QuickActionModal
-               triggerLabel="Add product"
-               title="Add Product"
-               cancelLabel="Cancel"
-               confirmLabel="Create draft"
+               triggerLabel="Dodaj produkt"
+               title="Dodaj produkt"
+               cancelLabel="Anuluj"
+               confirmLabel="Utwórz szkic"
                fields={[
-                  { label: "Product name", placeholder: "e.g. Tomato Passata" },
-                  { label: "Unit", placeholder: "e.g. pcs" },
-                  { label: "Supplier", placeholder: "e.g. Green Valley" },
-                  { label: "Initial quantity", placeholder: "e.g. 20", type: "number" },
+                  { label: "Nazwa produktu", placeholder: "np. Passata pomidorowa" },
+                  { label: "Jednostka", placeholder: "np. szt." },
+                  { label: "Dostawca", placeholder: "np. Zielona Dolina" },
+                  { label: "Ilość początkowa", placeholder: "np. 20", type: "number" },
                ]}
             />
             <SearchBar />
@@ -71,38 +71,38 @@ const Header = ({ title, icon, iconLabel, selectedProducts }: HeaderProps) => {
          <Modal isOpen={isEditOpen} onClose={() => setIsEditOpen(false)}>
             <div key={selectedProduct?.name ?? "no-selection"} className="space-y-4">
                <div>
-                  <h2 className="text-text-700 text-xl font-medium">Edit Product</h2>
-                  <p className="text-text-500 mt-1 text-sm">Values are loaded from the selected product.</p>
+                  <h2 className="text-text-700 text-xl font-medium">Edytuj produkt</h2>
+                  <p className="text-text-500 mt-1 text-sm">Wartości z zaznaczonego produktu.</p>
                </div>
                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <label className="space-y-1">
-                     <span className="text-text-700 text-sm font-medium">Product name</span>
+                     <span className="text-text-700 text-sm font-medium">Nazwa produktu</span>
                      <input
                         defaultValue={selectedProduct?.name ?? ""}
                         className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                      />
                   </label>
                   <label className="space-y-1">
-                     <span className="text-text-700 text-sm font-medium">Unit</span>
+                     <span className="text-text-700 text-sm font-medium">Jednostka</span>
                      <input
                         defaultValue={selectedProduct?.unit ?? ""}
                         className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                      />
                   </label>
                   <label className="space-y-1 md:col-span-2">
-                     <span className="text-text-700 text-sm font-medium">Category</span>
+                     <span className="text-text-700 text-sm font-medium">Kategoria</span>
                      <input
-                        defaultValue="General"
+                        defaultValue="Ogólna"
                         className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                      />
                   </label>
                </div>
                <div className="flex justify-end gap-2">
                   <Button type="button" variant="outline" onClick={() => setIsEditOpen(false)}>
-                     Cancel
+                     Anuluj
                   </Button>
                   <Button type="button" onClick={() => setIsEditOpen(false)}>
-                     Save draft
+                     Zapisz szkic
                   </Button>
                </div>
             </div>

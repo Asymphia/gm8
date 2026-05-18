@@ -1,4 +1,3 @@
-/** Starter blueprints — “template” is a labelled copy source (mock recipe ids) */
 export const RECIPE_TEMPLATES = [
    {
       id: "tpl-pasta",

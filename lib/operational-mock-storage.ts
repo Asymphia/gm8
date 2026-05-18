@@ -5,7 +5,6 @@ import type { RecipeCatalogPersisted } from "@/lib/recipe-catalog-storage"
 
 export const OPERATIONAL_STORAGE_KEY = "gm8_operational_mock_v1"
 
-/** Minimal ops snapshot: orders reference recipes; stock deducts on Accept from cookbook × portions */
 export interface OperationalPersisted {
    stock: StockRow[]
    orders: OrderRow[]
@@ -22,7 +21,6 @@ export function createSeedOperational(): OperationalPersisted {
    }
 }
 
-/** Discard legacy cashier fields when loading older localStorage */
 export function normalizeOperationalPersisted(parsed: unknown): OperationalPersisted | null {
    if (
       parsed === null ||

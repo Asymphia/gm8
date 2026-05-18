@@ -4,7 +4,6 @@ import { useMemo, useState, type ReactNode } from "react"
 import Modal from "@/components/ui/Modal"
 import Button, { type ButtonVariant } from "@/components/ui/Button"
 
-/** Bezpieczny identyfikator pola przy braku jawnego `name`. */
 export function defaultFieldKey(label: string, index: number): string {
    const slug = label
       .trim()
@@ -16,7 +15,6 @@ export function defaultFieldKey(label: string, index: number): string {
 
 export type FormField =
    | {
-        /** Domyślny typ pola: tekst (gdy pominięty `kind` lub `kind: "text"`) */
         kind?: "text"
         name?: string
         label: string

@@ -37,7 +37,7 @@ const EmployeesContent = () => {
 
    return (
       <>
-         <Header title="Employees" icon={MapPinIcon} iconLabel="Poznan, Poland" />
+         <Header title="Pracownicy" icon={MapPinIcon} iconLabel="Poznań, Polska" />
          <Table employees={employees} />
          <div className="flex flex-wrap justify-end gap-2">
             <Button
@@ -50,7 +50,7 @@ const EmployeesContent = () => {
                   setEditOpen(true)
                }}
             >
-               Edit employee…
+               Edytuj pracownika…
             </Button>
             <Button
                type="button"
@@ -62,18 +62,18 @@ const EmployeesContent = () => {
                   setRemoveOpen(true)
                }}
             >
-               Remove employee…
+               Usuń pracownika…
             </Button>
             <QuickActionModal
-               triggerLabel="Add Employee"
-               title="Add Employee"
+               triggerLabel="Dodaj pracownika"
+               title="Dodaj pracownika"
                cancelLabel="Anuluj"
-               confirmLabel="Add"
+               confirmLabel="Dodaj"
                fields={[
-                  { name: "first_name", label: "First name", placeholder: "Anna" },
-                  { name: "last_name", label: "Last name", placeholder: "Kowalska" },
-                  { name: "phone", label: "Phone", placeholder: "+48 500 000 000", type: "tel" },
-                  { name: "email", label: "Email", placeholder: "name@company.com", type: "email" },
+                  { name: "first_name", label: "Imię", placeholder: "Anna" },
+                  { name: "last_name", label: "Nazwisko", placeholder: "Kowalska" },
+                  { name: "phone", label: "Telefon", placeholder: "+48 500 000 000", type: "tel" },
+                  { name: "email", label: "E-mail", placeholder: "name@company.com", type: "email" },
                   {
                      kind: "select",
                      name: "active",

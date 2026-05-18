@@ -2,6 +2,8 @@
 
 import Link from "next/link"
 import { useMemo } from "react"
+import { useAuth } from "@/components/auth/AuthProvider"
+import DayPlanSection from "@/components/dashboard/DayPlanSection"
 import { useOperational } from "@/components/operations/OperationalProvider"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
 import { mockDb, type OrderStatus } from "@/lib/mock-db"
@@ -17,7 +19,6 @@ const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
 
 const LOW_QTY = 12
 
-/** YYYY-MM-DD → dni od dziś (lokalnie) */
 function daysUntilExpiry(isoDate: string): number {
    const today = new Date()
    today.setHours(12, 0, 0, 0)
@@ -27,6 +28,7 @@ function daysUntilExpiry(isoDate: string): number {
 }
 
 const DashboardContent = () => {
+   const { isOwner } = useAuth()
    const ops = useOperational()
 
    const primaryLinks = useMemo(() => {
@@ -59,16 +61,18 @@ const DashboardContent = () => {
          {
             href: "/orders",
             label: "Zamówienia",
-            description: "Draft → Accept FIFO z karty dania.",
+            description: "Szkic → Przyjmij (FIFO) z karty dania.",
             value: ops.ready ? `${newOrders}` : "…",
             sub: ops.ready ? `/ ${totalOrders} łącznie` : "",
          },
          {
-            href: "/schedule/plan",
+            href: isOwner ? "/schedule/plan" : "/schedule",
             label: "Harmonogram",
-            description: "Kalendarz zmian per pracownik · edycja w przeglądarce.",
+            description: isOwner
+               ? "Kalendarz zmian per pracownik · edycja w przeglądarce."
+               : "Plan dnia i ogłoszenia zespołu.",
             value: `${mockDb.schedules.length}`,
-            sub: "wpisy demo w mockDb",
+            sub: isOwner ? "wpisy demo" : "tylko podgląd",
          },
          {
             href: "/notifications",
@@ -78,7 +82,7 @@ const DashboardContent = () => {
             sub: "opublikowane",
          },
       ]
-   }, [ops.orders, ops.ready, ops.recipeCatalogRevision, ops.stock])
+   }, [isOwner, ops.orders, ops.ready, ops.recipeCatalogRevision, ops.stock])
 
    const hubItems = primaryLinks.map(({ href, label, description, value, sub }) => ({
       href,
@@ -149,8 +153,8 @@ const DashboardContent = () => {
    }).format(new Date()), [])
 
    return (
-      <div className="space-y-8">
-         <header className="flex flex-col gap-1 lg:flex-row lg:items-end lg:justify-between">
+      <div className="page-stack">
+         <header className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
                <p className="text-text-500 text-sm capitalize">{greeting}</p>
                <h1 className="mt-1">Pulpit</h1>
@@ -160,9 +164,9 @@ const DashboardContent = () => {
             </div>
             <Link
                href="/orders/register"
-               className="border-border-300 hover:border-primary-500 text-primary-700 mt-2 inline-flex shrink-0 items-center justify-center rounded-sm border bg-background px-4 py-2 text-sm font-medium transition-colors lg:mt-0"
+               className="border-border-300 hover:border-primary-500 text-primary-700 inline-flex w-full shrink-0 items-center justify-center rounded-sm border bg-background px-4 py-3 text-sm font-medium transition-colors sm:w-auto lg:mt-0"
             >
-               + Nowe zamówienie (draft)
+               + Nowe zamówienie (szkic)
             </Link>
          </header>
 
@@ -171,7 +175,8 @@ const DashboardContent = () => {
             <HubNavigationGrid items={hubItems} />
          </section>
 
-         <div className="grid gap-6 lg:grid-cols-2">
+         <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-2">
+            <DayPlanSection />
             <section className="rounded-md border border-border-300 bg-background p-4 shadow-sm">
                <div className="mb-3 flex items-center justify-between gap-2">
                   <h2 className="text-text-700 text-lg font-semibold tracking-tight">Ostatnie zamówienia</h2>

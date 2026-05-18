@@ -16,7 +16,7 @@ const RecipeDefinitionsPage = () => {
                .map(
                   li =>
                      mockDb.product_catalog.find(product => product.id === li.product_id)?.name ??
-                     `Product #${li.product_id}`
+                     `Produkt #${li.product_id}`
                )
                .join(", ")
             return {
@@ -31,38 +31,38 @@ const RecipeDefinitionsPage = () => {
 
    return (
       <div className="space-y-6">
-         <BackLink href="/recipes" label="Back to recipes hub" />
+         <BackLink href="/recipes" label="Powrót do przepisów" />
          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-               <h1>Recipe list</h1>
+               <h1>Lista przepisów</h1>
                <p className="text-text-500 mt-1">
-                  Every dish is composed of catalog products · open a recipe to inspect lines · create or duplicate via hub
-                  actions.
+                  Każde danie składa się z produktów katalogowych · otwórz przepis, aby zobaczyć linie · twórz lub duplikuj z
+                  menu modułu.
                </p>
             </div>
             <Link
                href="/recipes/new"
                className="bg-primary-500 hover:bg-primary-700 inline-flex rounded-sm px-6 py-3 text-sm font-medium text-white transition-colors"
             >
-               New recipe
+               Nowy przepis
             </Link>
             <Link
                href="/recipes/templates"
                className="border-primary-500 text-primary-500 hover:bg-foreground inline-flex rounded-sm border bg-background px-6 py-3 text-sm font-medium transition-colors"
             >
-               Templates
+               Szablony
             </Link>
          </div>
 
          {!ready ? (
-            <p className="text-text-500 text-sm">Loading…</p>
+            <p className="text-text-500 text-sm">Ładowanie…</p>
          ) : (
             <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
                <div className="grid min-w-[44rem] grid-cols-[minmax(0,1fr)_5rem_minmax(0,1fr)_7rem_7rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-                  <p>Recipe</p>
-                  <p className="text-center">Products</p>
-                  <p>Preview</p>
-                  <p className="text-center">Active</p>
+                  <p>Przepis</p>
+                  <p className="text-center">Produkty</p>
+                  <p>Podgląd</p>
+                  <p className="text-center">Aktywny</p>
                   <p />
                </div>
                {rows.map(row => (
@@ -80,13 +80,13 @@ const RecipeDefinitionsPage = () => {
                      <p className="min-w-0 truncate" title={row.preview}>
                         {row.preview || "—"}
                      </p>
-                     <p className="text-center text-xs">{row.isActive ? "Yes" : "No"}</p>
+                     <p className="text-center text-xs">{row.isActive ? "Tak" : "Nie"}</p>
                      <p className="text-right space-x-2">
                         <Link href={`/recipes/${row.id}`} className="text-primary-500 text-xs font-medium hover:underline">
-                           View
+                           Podgląd
                         </Link>
                         <Link href={`/recipes/${row.id}/edit`} className="text-primary-500 text-xs font-medium hover:underline">
-                           Edit
+                           Edytuj
                         </Link>
                      </p>
                   </div>

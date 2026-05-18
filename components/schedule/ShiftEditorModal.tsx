@@ -12,7 +12,6 @@ function isoDateLocal(d: Date): string {
    return `${y}-${m}-${day}`
 }
 
-/** HH:mm in local timezone */
 function hhmmLocal(d: Date): string {
    const h = String(d.getHours()).padStart(2, "0")
    const m = String(d.getMinutes()).padStart(2, "0")
@@ -33,7 +32,6 @@ function toMinutes(hm: string): number {
    return h * 60 + m
 }
 
-/** Domyślny czas końca dla nowego bloku wg zaznaczenia w kalendarzu */
 function deriveEndHmForAdd(presetStart: Date, presetEnd: Date): string {
    const startStr = hhmmLocal(presetStart)
    let endCandidate = hhmmLocal(presetEnd > presetStart ? presetEnd : presetStart)
@@ -68,7 +66,6 @@ const ShiftEditorModal = ({
    onCommit,
    onDelete,
 }: ShiftEditorModalProps) => {
-   /** Moduł dostaje świeży `key` od rodzica — inicjalizacja tylko przy montowaniu istnieje w synch z propsami. */
    const [dateStr, setDateStr] = useState(() => editingShift?.date ?? isoDateLocal(presetStart))
    const [startHm, setStartHm] = useState(() => editingShift?.start_time ?? hhmmLocal(presetStart))
    const [endHm, setEndHm] = useState(() => editingShift?.end_time ?? deriveEndHmForAdd(presetStart, presetEnd))

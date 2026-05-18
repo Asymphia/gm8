@@ -3,6 +3,8 @@
 import BackLink from "@/components/ui/BackLink"
 import Button from "@/components/ui/Button"
 import Modal from "@/components/ui/Modal"
+import { PageToolbar } from "@/components/ui/PageToolbar"
+import { ResponsiveDataView } from "@/components/ui/ResponsiveDataView"
 import { useOperational } from "@/components/operations/OperationalProvider"
 import { readRecipeCatalogForOps } from "@/lib/operational-mock-storage"
 import type { OrderStatus } from "@/lib/mock-db"
@@ -46,7 +48,7 @@ const OrdersListPage = () => {
             return {
                id: order.id,
                ticket: `ORD-${order.id}`,
-               recipe: recipe?.name ?? "Unknown recipe",
+               recipe: recipe?.name ?? "Nieznany przepis",
                createdAt: order.created_at.slice(11, 16),
                status: order.status,
                portions: item?.portions ?? "—",
@@ -64,44 +66,44 @@ const OrdersListPage = () => {
    )
 
    if (!ready) {
-      return <p className="text-text-500 text-sm">Loading orders…</p>
+      return <p className="text-text-500 text-sm">Ładowanie zamówień…</p>
    }
 
    return (
-      <div className="space-y-6">
-         <BackLink href="/orders" label="Back to orders" />
-         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-               <h1>Order list</h1>
-               <p className="text-text-500 mt-1">Kolejka operacyjna — edycja statusu lub usunięcie po wyborze zamówienia z listy.</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-               <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={ORDER_LIST_ROWS.length === 0}
-                  onClick={() => {
-                     setEditModalKey(previous => previous + 1)
-                     setEditOpen(true)
-                  }}
-               >
-                  Edit order…
-               </Button>
-               <Button
-                  type="button"
-                  variant="warning"
-                  size="sm"
-                  disabled={ORDER_LIST_ROWS.length === 0}
-                  onClick={() => {
-                     setRemoveModalKey(previous => previous + 1)
-                     setRemoveOpen(true)
-                  }}
-               >
-                  Remove order…
-               </Button>
-            </div>
-         </div>
+      <div className="page-stack">
+         <PageToolbar
+            back={<BackLink href="/orders" label="Powrót do zamówień" />}
+            title="Lista zamówień"
+            description="Kolejka operacyjna — edycja statusu lub usunięcie po wyborze zamówienia z listy."
+            actions={
+               <>
+                  <Button
+                     type="button"
+                     variant="outline"
+                     size="sm"
+                     disabled={ORDER_LIST_ROWS.length === 0}
+                     onClick={() => {
+                        setEditModalKey(previous => previous + 1)
+                        setEditOpen(true)
+                     }}
+                  >
+                     Edytuj zamówienie…
+                  </Button>
+                  <Button
+                     type="button"
+                     variant="warning"
+                     size="sm"
+                     disabled={ORDER_LIST_ROWS.length === 0}
+                     onClick={() => {
+                        setRemoveModalKey(previous => previous + 1)
+                        setRemoveOpen(true)
+                     }}
+                  >
+                     Usuń zamówienie…
+                  </Button>
+               </>
+            }
+         />
 
          {editOpen ? (
             <EditOrderModal
@@ -123,27 +125,19 @@ const OrdersListPage = () => {
             />
          ) : null}
 
-         <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
-            <div className="grid min-w-[46rem] grid-cols-[8rem_minmax(0,1fr)_5rem_8rem_10rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>Order</p>
-               <p>Recipe</p>
-               <p className="text-right">Portions</p>
-               <p>Time</p>
-               <p>Status</p>
-            </div>
-            {ORDER_LIST_ROWS.map(row => (
-               <div
-                  key={row.ticket}
-                  className="grid min-w-[46rem] grid-cols-[8rem_minmax(0,1fr)_5rem_8rem_10rem] border-b border-border-300 px-4 py-3 text-sm text-text-500 last:border-0"
-               >
-                  <p>{row.ticket}</p>
-                  <p>{row.recipe}</p>
-                  <p className="text-right tabular-nums">{row.portions}</p>
-                  <p>{row.createdAt}</p>
-                  <p>{STATUS_LABELS[row.status] ?? row.status}</p>
-               </div>
-            ))}
-         </div>
+         <ResponsiveDataView
+            rows={ORDER_LIST_ROWS}
+            rowKey={row => row.id}
+            desktopGridClass="grid-cols-[8rem_minmax(0,1fr)_5rem_8rem_10rem]"
+            desktopMinWidth="min-w-[46rem]"
+            columns={[
+               { id: "ticket", header: "Zamówienie", cell: r => <span className="text-text-700 font-medium">{r.ticket}</span> },
+               { id: "recipe", header: "Przepis", cell: r => r.recipe },
+               { id: "portions", header: "Porcje", cell: r => <span className="tabular-nums">{r.portions}</span> },
+               { id: "time", header: "Godzina", cell: r => r.createdAt },
+               { id: "status", header: "Status", cell: r => STATUS_LABELS[r.status] ?? r.status },
+            ]}
+         />
       </div>
    )
 }

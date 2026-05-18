@@ -12,8 +12,8 @@ const statusClass = {
 } as const
 
 const statusLabel = {
-   available: "Available",
-   planned: "Planned",
+   available: "Dostępne",
+   planned: "Planowane",
 } as const
 
 const FeatureSection = ({ group }: FeatureSectionProps) => {
@@ -21,7 +21,7 @@ const FeatureSection = ({ group }: FeatureSectionProps) => {
       <section className="rounded-sm border border-border-300 bg-background p-6 shadow-sm">
          <div className="mb-5 flex items-center justify-between">
             <h2>{group.title}</h2>
-            <span className="text-text-500 text-sm">{group.items.length} features</span>
+            <span className="text-text-500 text-sm">{group.items.length} funkcji</span>
          </div>
          <div className="space-y-3">
             {group.items.map(item => (

@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useAuth } from "@/components/auth/AuthProvider"
 import QuickActionModal from "@/components/ui/QuickActionModal"
 import { mockDb, type AnnouncementRow } from "@/lib/mock-db"
 import BackLink from "@/components/ui/BackLink"
@@ -16,7 +17,13 @@ function isoNow(): string {
 }
 
 const NotificationsBoardPage = () => {
+   const { isOwner } = useAuth()
    const [posts, setPosts] = useState<AnnouncementRow[]>(() => mockDb.announcements.map(a => ({ ...a })))
+
+   const visiblePosts = useMemo(
+      () => (isOwner ? posts : posts.filter(p => p.is_published)),
+      [isOwner, posts]
+   )
 
    const [editOpen, setEditOpen] = useState(false)
    const [removeOpen, setRemoveOpen] = useState(false)
@@ -25,40 +32,45 @@ const NotificationsBoardPage = () => {
 
    const BOARD_ROWS = useMemo(
       () =>
-         posts.map(announcement => ({
+         visiblePosts.map(announcement => ({
             id: announcement.id,
             title: announcement.title,
-            visibility: announcement.is_published ? "Published" : "Draft",
-            type: `Author #${announcement.user_id}`,
+            visibility: announcement.is_published ? "Opublikowane" : "Szkic",
+            type: `Autor #${announcement.user_id}`,
          })),
-      [posts]
+      [visiblePosts]
    )
 
    const selectOptions = useMemo(
       () =>
-         posts.map(p => ({
+         visiblePosts.map(p => ({
             value: String(p.id),
-            label: `${p.title} (#${p.id}) · ${p.is_published ? "Published" : "Draft"}`,
+            label: `${p.title} (#${p.id}) · ${p.is_published ? "Opublikowane" : "Szkic"}`,
          })),
-      [posts]
+      [visiblePosts]
    )
 
    return (
       <div className="space-y-6">
-         <BackLink href="/notifications" label="Back to announcements" />
+         <BackLink href="/notifications" label="Powrót do ogłoszeń" />
          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-               <h1>Announcements Board</h1>
-               <p className="text-text-500 mt-1">Wybór ogłoszenia z listy — edycja i publikacja tylko w tej sesji przeglądarki.</p>
+               <h1>Tablica ogłoszeń</h1>
+               <p className="text-text-500 mt-1">
+                  {isOwner
+                     ? "Wybór ogłoszenia z listy — edycja i publikacja tylko w tej sesji przeglądarki."
+                     : "Opublikowane komunikaty zespołu (tryb tylko do odczytu)."}
+               </p>
             </div>
+            {isOwner ? (
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                <QuickActionModal
                   triggerLabel="Nowy wpis…"
-                  title="Publish Announcement"
+                  title="Opublikuj ogłoszenie"
                   confirmLabel="Dodaj do tablicy"
                   fields={[
-                     { name: "title", label: "Title", placeholder: "Tytuł" },
-                     { name: "content", label: "Content", placeholder: "Treść" },
+                     { name: "title", label: "Tytuł", placeholder: "Tytuł" },
+                     { name: "content", label: "Treść", placeholder: "Treść" },
                      {
                         kind: "select",
                         name: "published",
@@ -74,7 +86,7 @@ const NotificationsBoardPage = () => {
                      const ts = isoNow()
                      const row: AnnouncementRow = {
                         id,
-                        title: vals.title?.trim() || "Untitled",
+                        title: vals.title?.trim() || "Bez tytułu",
                         content: vals.content?.trim() || "",
                         created_at: ts,
                         timestamp_updated_at: ts,
@@ -94,7 +106,7 @@ const NotificationsBoardPage = () => {
                      setEditOpen(true)
                   }}
                >
-                  Edit post…
+                  Edytuj wpis…
                </Button>
                <Button
                   type="button"
@@ -106,12 +118,13 @@ const NotificationsBoardPage = () => {
                      setRemoveOpen(true)
                   }}
                >
-                  Remove post…
+                  Usuń wpis…
                </Button>
             </div>
+            ) : null}
          </div>
 
-         {editOpen ? (
+         {isOwner && editOpen ? (
             <EditAnnouncementModal
                key={`e-${announcementEditKey}`}
                open={editOpen}
@@ -121,7 +134,7 @@ const NotificationsBoardPage = () => {
                onSave={nextPosts => setPosts(nextPosts)}
             />
          ) : null}
-         {removeOpen ? (
+         {isOwner && removeOpen ? (
             <RemoveAnnouncementModal
                key={`r-${announcementRemoveKey}`}
                open={removeOpen}
@@ -134,9 +147,9 @@ const NotificationsBoardPage = () => {
 
          <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
             <div className="grid min-w-[40rem] grid-cols-[minmax(0,1fr)_12rem_10rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>Announcement</p>
-               <p>Visibility</p>
-               <p>Type</p>
+               <p>Ogłoszenie</p>
+               <p>Widoczność</p>
+               <p>Typ</p>
             </div>
             {BOARD_ROWS.map(row => (
                <div
@@ -197,7 +210,7 @@ function EditAnnouncementModal({
       <Modal isOpen={open} onClose={onClose}>
          <div className="space-y-4">
             <div>
-               <h2 className="text-text-700 text-xl font-medium">Edit Announcement</h2>
+               <h2 className="text-text-700 text-xl font-medium">Edytuj ogłoszenie</h2>
                <p className="text-text-500 mt-1 text-sm">Wybór z listy zamiast ręcznego wpisywania tytułu.</p>
             </div>
             <label className="flex flex-col gap-1">
@@ -237,10 +250,10 @@ function EditAnnouncementModal({
             </label>
             <div className="flex justify-end gap-2 border-t border-border-300 pt-3">
                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
+                  Anuluj
                </Button>
                <Button type="button" variant="primary" onClick={handleSave}>
-                  Save
+                  Zapisz
                </Button>
             </div>
          </div>
@@ -278,7 +291,7 @@ function RemoveAnnouncementModal({
       <Modal isOpen={open} onClose={onClose}>
          <div className="space-y-4">
             <div>
-               <h2 className="text-text-700 text-xl font-medium">Remove post</h2>
+               <h2 className="text-text-700 text-xl font-medium">Usuń wpis</h2>
                <p className="text-text-500 mt-1 text-sm">Zaznacz wpis na liście.</p>
             </div>
             <label className="flex flex-col gap-1">
@@ -297,10 +310,10 @@ function RemoveAnnouncementModal({
             </label>
             <div className="flex justify-end gap-2 border-t border-border-300 pt-3">
                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancel
+                  Anuluj
                </Button>
                <Button type="button" variant="warning" onClick={handleRemove}>
-                  Remove
+                  Usuń
                </Button>
             </div>
          </div>

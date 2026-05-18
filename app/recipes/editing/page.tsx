@@ -15,7 +15,7 @@ const RecipeEditingBoardPage = () => {
                id: recipe.id,
                recipe: recipe.name,
                displayDate: `2026-05-0${(index % 6) + 3}`,
-               state: recipe.is_active ? "Listed" : "Hidden",
+               state: recipe.is_active ? "Widoczny" : "Ukryty",
                ingredientCount,
             }
          })
@@ -24,37 +24,37 @@ const RecipeEditingBoardPage = () => {
    if (!ready) {
       return (
          <div className="space-y-4">
-            <BackLink href="/recipes" label="Back to recipes hub" />
-            <p className="text-text-500 text-sm">Loading…</p>
+            <BackLink href="/recipes" label="Powrót do przepisów" />
+            <p className="text-text-500 text-sm">Ładowanie…</p>
          </div>
       )
    }
 
    return (
       <div className="space-y-6">
-         <BackLink href="/recipes" label="Back to recipes hub" />
+         <BackLink href="/recipes" label="Powrót do przepisów" />
          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-               <h1>Recipe lifecycle</h1>
+               <h1>Cykl życia przepisu</h1>
                <p className="text-text-500 mt-1">
-                  Quickly hide/show recipes for the mock menu builder. Structural edits happen in Recipe list + builder.
+                  Szybkie ukrywanie i pokazywanie przepisów w menu mock. Edycja strukturalna w liście przepisów i edytorze.
                </p>
             </div>
             <Link
                href="/recipes/new"
                className="bg-primary-500 hover:bg-primary-700 inline-flex rounded-sm px-6 py-3 text-sm font-medium text-white transition-colors"
             >
-               New recipe
+               Nowy przepis
             </Link>
          </div>
 
          <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
             <div className="grid min-w-[48rem] grid-cols-[minmax(0,1fr)_6rem_9rem_8rem_10rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>Recipe</p>
-               <p className="text-center">Products</p>
-               <p>Lifecycle state</p>
-               <p>Mock date</p>
-               <p className="text-right">Visibility</p>
+               <p>Przepis</p>
+               <p className="text-center">Produkty</p>
+               <p>Stan cyklu</p>
+               <p>Data (mock)</p>
+               <p className="text-right">Widoczność</p>
             </div>
             {rows.map(row => (
                <div
@@ -72,7 +72,7 @@ const RecipeEditingBoardPage = () => {
                   <p>{row.displayDate}</p>
                   <div className="flex justify-end gap-2">
                      <Link href={`/recipes/${row.id}/edit`} className="text-primary-500 text-xs hover:underline">
-                        Builder
+                        Edytor
                      </Link>
                      <button
                         type="button"
@@ -83,7 +83,7 @@ const RecipeEditingBoardPage = () => {
                            setRecipeActive(row.id, !current.is_active)
                         }}
                      >
-                        {catalog.recipes.find(r => r.id === row.id)?.is_active ? "Hide" : "Show"}
+                        {catalog.recipes.find(r => r.id === row.id)?.is_active ? "Ukryj" : "Pokaż"}
                      </button>
                   </div>
                </div>

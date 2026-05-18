@@ -89,27 +89,9 @@
    html {
       scroll-behavior: smooth;
       scrollbar-gutter: stable;
-      font-size: 100%;
+      font-size: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
       -webkit-text-size-adjust: 100%;
       text-size-adjust: 100%;
-   }
-
-   @media (max-width: 1024px) {
-      html {
-         font-size: 93%;
-      }
-   }
-
-   @media (max-width: 640px) {
-      html {
-         font-size: 87.5%;
-      }
-   }
-
-   @media (max-width: 480px) {
-      html {
-         font-size: 79%;
-      }
    }
 
    body {
@@ -134,15 +116,15 @@
    }
 
    h1 {
-      font-size: 2rem;
+      font-size: clamp(1.5rem, 1.2rem + 1.5vw, 2rem);
    }
 
    h2 {
-      font-size: 1.5rem;
+      font-size: clamp(1.25rem, 1.1rem + 0.75vw, 1.5rem);
    }
 
    h3 {
-      font-size: 1.25rem;
+      font-size: clamp(1.1rem, 1rem + 0.4vw, 1.25rem);
    }
 
    p {
@@ -165,5 +147,110 @@
    ::selection {
       background: color-mix(in srgb, var(--primary-300) 10%, transparent);
       color: var(--primary-700);
+   }
+}
+
+@layer components {
+   .page-stack {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(1rem, 3vw, 1.5rem);
+   }
+
+   .page-toolbar__main {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+   }
+
+   @media (min-width: 640px) {
+      .page-toolbar__main {
+         flex-direction: row;
+         align-items: flex-start;
+         justify-content: space-between;
+      }
+   }
+
+   .page-toolbar__actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      width: 100%;
+   }
+
+   @media (min-width: 640px) {
+      .page-toolbar__actions {
+         flex-direction: row;
+         flex-wrap: wrap;
+         width: auto;
+         justify-content: flex-end;
+      }
+   }
+
+   .page-toolbar__actions > * {
+      width: 100%;
+   }
+
+   @media (min-width: 640px) {
+      .page-toolbar__actions > * {
+         width: auto;
+      }
+   }
+
+   .table-scroll {
+      position: relative;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-x: contain;
+   }
+
+   .table-scroll::after {
+      content: "";
+      position: sticky;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 1.5rem;
+      margin-left: -1.5rem;
+      pointer-events: none;
+      background: linear-gradient(to left, var(--background), transparent);
+      float: right;
+   }
+
+   .app-main-pad {
+      padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+   }
+
+   @media (min-width: 768px) {
+      .app-main-pad {
+         padding-bottom: 0;
+      }
+   }
+
+   .fc-wrapper .fc-toolbar {
+      flex-wrap: wrap;
+      gap: 0.5rem;
+   }
+
+   .fc-wrapper .fc-toolbar-chunk {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.25rem;
+   }
+
+   @media (max-width: 767px) {
+      .fc-wrapper .fc-toolbar-title {
+         font-size: 0.95rem !important;
+      }
+
+      .fc-wrapper .fc-button {
+         padding: 0.35rem 0.5rem !important;
+         font-size: 0.7rem !important;
+      }
+
+      .fc-wrapper .fc-timegrid-slot-label {
+         font-size: 0.65rem;
+      }
    }
 }

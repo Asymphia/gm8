@@ -14,7 +14,7 @@ const EditRecipePage = () => {
 
    return (
       <div className="space-y-6">
-         <BackLink href={validId ? `/recipes/${recipeId}` : "/recipes"} label={validId ? "Back to recipe" : "Back"} />
+         <BackLink href={validId ? `/recipes/${recipeId}` : "/recipes"} label={validId ? "Powrót do przepisu" : "Wstecz"} />
          {validId ? (
             <RecipeEditorForm
                key={recipeId}
@@ -23,7 +23,7 @@ const EditRecipePage = () => {
                cancelHref={`/recipes/${recipeId}`}
             />
          ) : (
-            <p className="text-text-500 text-sm">Invalid recipe id.</p>
+            <p className="text-text-500 text-sm">Nieprawidłowy identyfikator przepisu.</p>
          )}
       </div>
    )

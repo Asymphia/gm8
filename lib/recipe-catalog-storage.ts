@@ -1,6 +1,5 @@
 import { mockDb, type RecipeIngredientRow, type RecipeRow } from "@/lib/mock-db"
 
-/** Recipe as stored — `is_template` only for blueprint rows duplicated by user flow */
 export interface CatalogRecipeRow extends RecipeRow {
    is_template?: boolean
 }
@@ -8,13 +7,11 @@ export interface CatalogRecipeRow extends RecipeRow {
 export interface RecipeCatalogPersisted {
    recipes: CatalogRecipeRow[]
    ingredients: RecipeIngredientRow[]
-   /** Next id for newly created recipes (avoids clashes with seeded 201…) */
    nextRecipeId: number
 }
 
 export const RECIPE_CATALOG_STORAGE_KEY = "gm8_recipe_catalog_v1"
 
-/** Dispatched whenever the cookbook is saved — operations layer refreshes previews */
 export const RECIPE_CATALOG_UPDATED_EVENT = "gm8-recipe-catalog-updated"
 
 const DEFAULT_NEXT_ID = 900

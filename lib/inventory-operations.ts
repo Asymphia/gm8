@@ -12,7 +12,6 @@ export interface InventoryOperation {
    createdAt: string
    changedItems: number
    summary: string
-   /** Present for operations saved after detail support; older saves may omit. */
    details?: InventoryOperationLine[]
 }
 

@@ -22,7 +22,7 @@ const ProductsContent = () => {
 
    return (
       <>
-         <Header title="Product list" icon={MapPinIcon} iconLabel="Poznan, Poland" selectedProducts={selectedProducts} />
+         <Header title="Lista produktów" icon={MapPinIcon} iconLabel="Poznań, Polska" selectedProducts={selectedProducts} />
          <Table
             products={DUMMY_PRODUCT_CATALOG_DATA}
             selectedProductNames={selectedProductNames}

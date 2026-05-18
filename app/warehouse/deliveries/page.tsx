@@ -1,117 +1,164 @@
 "use client"
 
-import { mockDb } from "@/lib/mock-db"
 import BackLink from "@/components/ui/BackLink"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import Button from "@/components/ui/Button"
 import Link from "next/link"
+import { mockDb } from "@/lib/mock-db"
+import {
+   loadDeliveriesBrowser,
+   saveDeliveriesBrowser,
+   type DeliveriesPersisted,
+} from "@/lib/deliveries-storage"
+import { useOperational } from "@/components/operations/OperationalProvider"
+import { PageToolbar } from "@/components/ui/PageToolbar"
+import { StatGrid } from "@/components/ui/StatGrid"
+import { ResponsiveDataView } from "@/components/ui/ResponsiveDataView"
 
-interface DeliveryRowView {
+type DeliveryRow = {
    id: number
    supplier: string
    date: string
-   status: "Pending approval" | "Accepted"
+   status: string
+   statusKey: string
    products: string[]
 }
 
-const initialRows: DeliveryRowView[] = mockDb.deliveries.map(delivery => {
-   const items = mockDb.delivery_items.filter(item => item.delivery_id === delivery.id)
-   const supplier = items[0]?.supplier_name ?? "Unknown supplier"
-   const products = items.map(
-      item => mockDb.product_catalog.find(product => product.id === item.product_id)?.name ?? `Product #${item.product_id}`
-   )
-
-   return {
-      id: delivery.id,
-      supplier,
-      date: delivery.delivered_at.slice(0, 10),
-      status: delivery.type === "supplier" ? "Pending approval" : "Accepted",
-      products,
-   }
-})
-
 const DeliveriesPage = () => {
-   const [rows, setRows] = useState<DeliveryRowView[]>(initialRows)
+   const { ready: opsReady, receiveDeliveryItems } = useOperational()
+   const [store, setStore] = useState<DeliveriesPersisted | null>(null)
    const [selectedDeliveryIds, setSelectedDeliveryIds] = useState<number[]>([])
+   const [feedback, setFeedback] = useState<string | null>(null)
 
-   const canAccept = selectedDeliveryIds.length > 0
+   useEffect(() => {
+      queueMicrotask(() => setStore(loadDeliveriesBrowser()))
+   }, [])
 
-   const pendingCount = useMemo(() => rows.filter(row => row.status === "Pending approval").length, [rows])
+   const rows = useMemo((): DeliveryRow[] => {
+      if (!store) return []
+      return store.deliveries.map(d => ({
+         id: d.id,
+         supplier: d.supplier_name,
+         date: d.delivered_at.slice(0, 10),
+         status: d.status === "pending" ? "Oczekuje na zatwierdzenie" : "Przyjęta",
+         statusKey: d.status,
+         products: d.items.map(
+            item =>
+               mockDb.product_catalog.find(p => p.id === item.product_id)?.name ?? `Produkt #${item.product_id}`
+         ),
+      }))
+   }, [store])
+
+   const pendingCount = rows.filter(r => r.statusKey === "pending").length
+   const canAccept = selectedDeliveryIds.length > 0 && opsReady
 
    const toggleDeliverySelection = (id: number) => {
-      setSelectedDeliveryIds(previous => (previous.includes(id) ? previous.filter(value => value !== id) : [...previous, id]))
+      setSelectedDeliveryIds(previous => (previous.includes(id) ? previous.filter(v => v !== id) : [...previous, id]))
    }
 
    const handleAcceptSelected = () => {
-      setRows(previous =>
-         previous.map(row => (selectedDeliveryIds.includes(row.id) ? { ...row, status: "Accepted" as const } : row))
+      if (!store || !opsReady) return
+      setFeedback(null)
+
+      const toAccept = store.deliveries.filter(
+         d => selectedDeliveryIds.includes(d.id) && d.status === "pending"
       )
+      if (toAccept.length === 0) {
+         setFeedback("Wybrane dostawy są już przyjęte lub lista jest pusta.")
+         return
+      }
+
+      for (const delivery of toAccept) {
+         receiveDeliveryItems(delivery.items)
+      }
+
+      const next: DeliveriesPersisted = {
+         ...store,
+         deliveries: store.deliveries.map(d =>
+            selectedDeliveryIds.includes(d.id) && d.status === "pending" ? { ...d, status: "accepted" as const } : d
+         ),
+      }
+      saveDeliveriesBrowser(next)
+      setStore(next)
       setSelectedDeliveryIds([])
+      setFeedback(
+         `Przyjęto ${toAccept.length} dostaw — stany magazynowe zaktualizowane (${toAccept.reduce((n, d) => n + d.items.length, 0)} pozycji).`
+      )
+   }
+
+   if (!store) {
+      return <p className="text-text-500 text-sm">Ładowanie dostaw…</p>
    }
 
    return (
-      <div className="space-y-6">
-         <BackLink href="/warehouse" label="Back to warehouse" />
-         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-               <h1>Warehouse Deliveries</h1>
-               <p className="text-text-500 mt-1">Preview incoming deliveries and acceptance status.</p>
-            </div>
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-               <Link
-                  href="/warehouse/deliveries/register"
-                  className="bg-primary-500 hover:bg-primary-700 rounded-sm px-6 py-3 text-sm font-medium text-white transition-colors"
-               >
-                  Register delivery
-               </Link>
-               <Button type="button" variant="outline" disabled={!canAccept} onClick={handleAcceptSelected}>
-                  Accept delivery
-               </Button>
-            </div>
-         </div>
-         <div className="grid gap-3 sm:grid-cols-3">
-            <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Total deliveries</p>
-               <p className="text-text-700 mt-1 text-xl font-semibold">{rows.length}</p>
-            </article>
-            <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Pending approval</p>
-               <p className="text-warning mt-1 text-xl font-semibold">{pendingCount}</p>
-            </article>
-            <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Selected for approval</p>
-               <p className="text-primary-500 mt-1 text-xl font-semibold">{selectedDeliveryIds.length}</p>
-            </article>
-         </div>
-         <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
-            <div className="grid min-w-[52rem] grid-cols-[3rem_minmax(0,1fr)_10rem_12rem_minmax(0,1fr)] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p />
-               <p>Supplier</p>
-               <p>Date</p>
-               <p>Status</p>
-               <p>Products</p>
-            </div>
-            {rows.map(row => (
-               <div
-                  key={row.id}
-                  className="grid min-w-[52rem] grid-cols-[3rem_minmax(0,1fr)_10rem_12rem_minmax(0,1fr)] border-b border-border-300 px-4 py-3 text-sm text-text-500 last:border-0"
-               >
-                  <div className="flex justify-center">
-                     <input
-                        type="checkbox"
-                        checked={selectedDeliveryIds.includes(row.id)}
-                        onChange={() => toggleDeliverySelection(row.id)}
-                        aria-label={`Select delivery ${row.id}`}
-                        className="h-4 w-4 accent-primary-500"
-                     />
-                  </div>
-                  <p>{row.supplier}</p>
-                  <p>{row.date}</p>
-                  <p>{row.status}</p>
-                  <p>{row.products.join(", ")}</p>
-               </div>
-            ))}
-         </div>
+      <div className="page-stack">
+         <PageToolbar
+            back={<BackLink href="/warehouse" label="Powrót do magazynu" />}
+            title="Dostawy magazynowe"
+            description="Przyjęcie dostawy aktualizuje operacyjny magazyn (partie wg produktu, ważności i dostawcy)."
+            actions={
+               <>
+                  <Link
+                     href="/warehouse/deliveries/register"
+                     className="bg-primary-500 hover:bg-primary-700 inline-flex items-center justify-center rounded-sm px-6 py-3 text-center text-sm font-medium text-white transition-colors"
+                  >
+                     Zarejestruj dostawę
+                  </Link>
+                  <Button type="button" variant="outline" disabled={!canAccept} onClick={handleAcceptSelected}>
+                     Przyjmij dostawę
+                  </Button>
+               </>
+            }
+         />
+
+         {feedback ? (
+            <p className="text-text-500 border-border-300 rounded-sm border border-dashed px-3 py-2 text-sm">{feedback}</p>
+         ) : null}
+
+         <StatGrid
+            items={[
+               { label: "Wszystkie dostawy", value: rows.length },
+               { label: "Oczekuje", value: pendingCount, valueClassName: "text-warning" },
+               { label: "Wybrane", value: selectedDeliveryIds.length, valueClassName: "text-primary-500" },
+            ]}
+         />
+
+         <ResponsiveDataView
+            rows={rows}
+            rowKey={r => r.id}
+            desktopGridClass="grid-cols-[3rem_minmax(0,1fr)_10rem_12rem_minmax(0,1fr)]"
+            desktopMinWidth="min-w-[52rem]"
+            rowPrefix={row =>
+               row.statusKey === "pending" ? (
+                  <input
+                     type="checkbox"
+                     checked={selectedDeliveryIds.includes(row.id)}
+                     onChange={() => toggleDeliverySelection(row.id)}
+                     aria-label={`Zaznacz dostawę ${row.id}`}
+                     className="h-4 w-4 accent-primary-500"
+                     onClick={e => e.stopPropagation()}
+                  />
+               ) : (
+                  <span className="text-text-300 text-xs">—</span>
+               )
+            }
+            columns={[
+               { id: "supplier", header: "Dostawca", cell: r => <p className="text-text-700 font-medium">{r.supplier}</p> },
+               { id: "date", header: "Data", cell: r => r.date },
+               {
+                  id: "status",
+                  header: "Status",
+                  cell: r => (
+                     <span className={r.statusKey === "pending" ? "text-warning" : "text-text-500"}>{r.status}</span>
+                  ),
+               },
+               {
+                  id: "products",
+                  header: "Produkty",
+                  cell: r => <p className="line-clamp-2 sm:line-clamp-none">{r.products.join(", ")}</p>,
+               },
+            ]}
+         />
       </div>
    )
 }

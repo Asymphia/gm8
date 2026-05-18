@@ -24,15 +24,15 @@ const InventoriesListPage = () => {
 
    return (
       <div className="space-y-6">
-         <BackLink href="/warehouse/stocktaking" label="Back to stocktaking" />
+         <BackLink href="/warehouse/stocktaking" label="Powrót do inwentaryzacji" />
          <div>
-            <h1>Inventory list</h1>
-            <p className="text-text-500 mt-1">Saved stocktaking corrections. Open a record for full line details.</p>
+            <h1>Lista inwentaryzacji</h1>
+            <p className="text-text-500 mt-1">Zapisane korekty inwentaryzacji. Otwórz rekord, aby zobaczyć szczegóły pozycji.</p>
          </div>
 
          {operations.length === 0 ? (
             <p className="text-text-500 rounded-sm border border-border-300 bg-background p-6 text-sm">
-               No inventories yet. Run a stocktaking and use &quot;Apply corrections&quot; to save the first one.
+               Brak inwentaryzacji. Przeprowadź inwentaryzację i użyj „Zastosuj korekty”, aby zapisać pierwszą.
             </p>
          ) : (
             <ul className="space-y-2">
@@ -47,7 +47,7 @@ const InventoriesListPage = () => {
                            <p className="text-text-500 text-sm">{op.summary}</p>
                            <p className="text-text-300 mt-1 text-xs">{op.id}</p>
                         </div>
-                        <span className="text-primary-500 text-sm font-medium">Open →</span>
+                        <span className="text-primary-500 text-sm font-medium">Otwórz →</span>
                      </Link>
                   </li>
                ))}

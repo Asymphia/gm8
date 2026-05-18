@@ -26,7 +26,7 @@ const Modal = ({ isOpen, onClose, children }: ModalProps) => {
    return createPortal(
       <div
          role="presentation"
-         className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
+         className="fixed inset-0 z-[99999] flex items-end justify-center p-0 sm:items-center sm:p-4"
       >
          <button
             type="button"
@@ -37,7 +37,7 @@ const Modal = ({ isOpen, onClose, children }: ModalProps) => {
          <div
             role="dialog"
             aria-modal="true"
-            className="relative z-10 w-full max-w-lg rounded-md bg-background p-6 shadow-lg"
+            className="relative z-10 max-h-[min(92vh,100dvh)] w-full max-w-lg overflow-y-auto rounded-t-md bg-background p-5 shadow-lg sm:rounded-md sm:p-6"
             onClick={e => e.stopPropagation()}
          >
             {children}

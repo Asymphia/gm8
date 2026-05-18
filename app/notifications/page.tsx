@@ -1,23 +1,23 @@
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
 
 const ANNOUNCEMENTS = [
-   { title: "Tomorrow inventory check", author: "Manager", publishedAt: "2026-05-07 14:00" },
-   { title: "Updated hygiene checklist", author: "Quality lead", publishedAt: "2026-05-06 18:30" },
-   { title: "Weekend staffing update", author: "HR", publishedAt: "2026-05-05 12:00" },
+   { title: "Jutrzejsza inwentaryzacja", author: "Kierownik", publishedAt: "2026-05-07 14:00" },
+   { title: "Zaktualizowana lista higieny", author: "Odpowiedzialny za jakość", publishedAt: "2026-05-06 18:30" },
+   { title: "Aktualizacja obsady na weekend", author: "Kadry", publishedAt: "2026-05-05 12:00" },
 ]
 
 const hubItems = [
    {
       href: "/notifications",
-      label: "Announcements feed",
-      description: "Published posts and timestamps in chronological order.",
+      label: "Kanał ogłoszeń",
+      description: "Opublikowane wpisy z datami w kolejności chronologicznej.",
       value: String(ANNOUNCEMENTS.length),
    },
    {
       href: "/notifications/board",
-      label: "Board",
-      description: "Operational board view for posts and pinning mock.",
-      value: "Open",
+      label: "Tablica",
+      description: "Operacyjny widok tablicy wpisów (mock).",
+      value: "Otwórz",
    },
 ]
 
@@ -25,8 +25,8 @@ const NotificationPage = () => {
    return (
       <div className="space-y-6">
          <div>
-            <h1>Announcements</h1>
-            <p className="text-text-500 mt-1">Publication overview — same hub card layout as other modules.</p>
+            <h1>Ogłoszenia</h1>
+            <p className="text-text-500 mt-1">Przegląd opublikowanych komunikatów zespołu.</p>
          </div>
          <HubNavigationGrid items={hubItems} />
          <div className="space-y-3">

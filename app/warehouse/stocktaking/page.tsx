@@ -18,7 +18,7 @@ const INITIAL_STOCKTAKING_ROWS = mockDb.inventory_items.map(item => {
 
    return {
       stockId: item.stock_id,
-      product: product?.name ?? "Unknown product",
+      product: product?.name ?? "Nieznany produkt",
       unit,
       systemQuantity: item.system_quantity,
       realQuantity: item.real_quantity,
@@ -37,7 +37,7 @@ const StocktakingPage = () => {
                ...row,
                delta,
                deltaLabel: `${delta > 0 ? "+" : ""}${delta} ${row.unit}`,
-               action: delta === 0 ? "No action" : "Correction needed",
+               action: delta === 0 ? "Bez zmian" : "Wymaga korekty",
             }
          }),
       [rows]
@@ -89,33 +89,33 @@ const StocktakingPage = () => {
 
    return (
       <div className="space-y-6">
-         <BackLink href="/warehouse" label="Back to warehouse" />
+         <BackLink href="/warehouse" label="Powrót do magazynu" />
          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-               <h1>Stocktaking</h1>
-               <p className="text-text-500 mt-1">Compare system levels with physical count and apply corrections.</p>
+               <h1>Inwentaryzacja</h1>
+               <p className="text-text-500 mt-1">Porównaj stan systemu z liczeniem i zastosuj korekty.</p>
             </div>
             <Button type="button" variant="outline" onClick={applyCorrections} disabled={pendingCorrections === 0}>
-               Apply corrections
+               Zastosuj korekty
             </Button>
          </div>
          <div className="grid gap-3 sm:grid-cols-2">
             <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Items in stocktaking</p>
+               <p className="text-text-300 text-xs">Pozycje w inwentaryzacji</p>
                <p className="text-text-700 mt-1 text-xl font-semibold">{rowsWithStatus.length}</p>
             </article>
             <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Pending corrections</p>
+               <p className="text-text-300 text-xs">Oczekujące korekty</p>
                <p className="text-warning mt-1 text-xl font-semibold">{pendingCorrections}</p>
             </article>
          </div>
          <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
             <div className="grid min-w-[52rem] grid-cols-[minmax(0,1fr)_9rem_10rem_9rem_12rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>Product</p>
-               <p>System qty</p>
-               <p>Real qty</p>
-               <p>Difference</p>
-               <p>Action</p>
+               <p>Produkt</p>
+               <p>Stan systemu</p>
+               <p>Stan rzeczywisty</p>
+               <p>Różnica</p>
+               <p>Akcja</p>
             </div>
             {rowsWithStatus.map(row => (
                <div
@@ -144,20 +144,20 @@ const StocktakingPage = () => {
 
          <section className="space-y-3 rounded-sm border border-border-300 bg-background p-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-               <h2 className="text-text-700 text-lg font-medium">Recent inventory operations</h2>
+               <h2 className="text-text-700 text-lg font-medium">Ostatnie operacje inwentaryzacji</h2>
                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-text-300 text-xs">{operations.length} saved</span>
+                  <span className="text-text-300 text-xs">{operations.length} zapisanych</span>
                   <Link
                      href="/warehouse/stocktaking/inventories"
                      className="text-primary-500 hover:text-primary-700 text-sm font-medium"
                   >
-                     Open full list →
+                     Pełna lista →
                   </Link>
                </div>
             </div>
             {operations.length === 0 ? (
                <p className="text-text-500 text-sm">
-                  No saved corrections yet. Apply corrections to create first inventory operation.
+                  Brak zapisanych korekt. Zastosuj korekty, aby utworzyć pierwszą operację inwentaryzacji.
                </p>
             ) : (
                <div className="space-y-2">
@@ -171,7 +171,7 @@ const StocktakingPage = () => {
                            <p className="text-text-700 text-sm font-medium">{new Date(operation.createdAt).toLocaleString()}</p>
                            <p className="text-text-500 text-xs">{operation.summary}</p>
                         </div>
-                        <p className="text-primary-500 text-xs font-medium">{operation.changedItems} items · Open</p>
+                        <p className="text-primary-500 text-xs font-medium">{operation.changedItems} poz. · Otwórz</p>
                      </Link>
                   ))}
                </div>

@@ -8,7 +8,7 @@ const StockLevelsPage = () => {
    const { ready, stock } = useOperational()
 
    if (!ready) {
-      return <p className="text-text-500 text-sm">Loading stock…</p>
+      return <p className="text-text-500 text-sm">Ładowanie stanów…</p>
    }
 
    const STOCK_ROWS = stock
@@ -16,7 +16,7 @@ const StockLevelsPage = () => {
          const product = mockDb.product_catalog.find(p => p.id === row.product_id)
          return {
             id: row.id,
-            product: product?.name ?? `Product #${row.product_id}`,
+            product: product?.name ?? `Produkt #${row.product_id}`,
             unit: product?.unit ?? "pcs",
             quantity: row.quantity,
             expiryDate: row.expiry_date,
@@ -30,26 +30,26 @@ const StockLevelsPage = () => {
 
    return (
       <div className="space-y-6">
-         <BackLink href="/warehouse" label="Back to warehouse" />
+         <BackLink href="/warehouse" label="Powrót do magazynu" />
          <div>
-            <h1>Stock levels</h1>
+            <h1>Stany magazynowe</h1>
             <p className="text-text-500 mt-1">
-               Live view of the operational mock — quantities drop when orders are <span className="text-text-700">accepted</span>{" "}
-               from Orders (FIFO by expiry).
+               Bieżący widok operacyjny — ilości maleją po <span className="text-text-700">przyjęciu</span> zamówienia w module
+               Zamówienia (FIFO wg daty ważności).
             </p>
          </div>
 
          <div className="grid gap-3 sm:grid-cols-3">
             <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Stock lines</p>
+               <p className="text-text-300 text-xs">Linie stanu</p>
                <p className="text-text-700 mt-1 text-xl font-semibold">{STOCK_ROWS.length}</p>
             </article>
             <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Total quantity (sum)</p>
+               <p className="text-text-300 text-xs">Suma ilości</p>
                <p className="text-text-700 mt-1 text-xl font-semibold">{totalUnits.toFixed(2)}</p>
             </article>
             <article className="rounded-sm border border-border-300 bg-background p-3">
-               <p className="text-text-300 text-xs">Unique products</p>
+               <p className="text-text-300 text-xs">Unikalne produkty</p>
                <p className="text-text-700 mt-1 text-xl font-semibold">
                   {new Set(STOCK_ROWS.map(r => r.product)).size}
                </p>
@@ -58,13 +58,13 @@ const StockLevelsPage = () => {
 
          <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
             <div className="grid min-w-[52rem] grid-cols-[6rem_minmax(0,1fr)_6rem_8rem_10rem_minmax(0,1fr)_8rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>Stock ID</p>
-               <p>Product</p>
-               <p>Unit</p>
-               <p className="text-right">Quantity</p>
-               <p>Expiry</p>
-               <p>Supplier</p>
-               <p className="text-center">Catalog</p>
+               <p>ID partii</p>
+               <p>Produkt</p>
+               <p>J.m.</p>
+               <p className="text-right">Ilość</p>
+               <p>Ważność</p>
+               <p>Dostawca</p>
+               <p className="text-center">Katalog</p>
             </div>
             {STOCK_ROWS.map(row => (
                <div
@@ -81,7 +81,7 @@ const StockLevelsPage = () => {
                   <p className="min-w-0 truncate" title={row.supplier}>
                      {row.supplier}
                   </p>
-                  <p className="text-center">{row.active ? "Active" : "Inactive"}</p>
+                  <p className="text-center">{row.active ? "Aktywny" : "Nieaktywny"}</p>
                </div>
             ))}
          </div>

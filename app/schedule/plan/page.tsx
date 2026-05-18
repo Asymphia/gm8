@@ -1,5 +1,6 @@
 "use client"
 
+import { RequireOwner } from "@/components/auth/RequireOwner"
 import BackLink from "@/components/ui/BackLink"
 import Button from "@/components/ui/Button"
 import EmployeeShiftCalendar from "@/components/schedule/EmployeeShiftCalendar"
@@ -64,11 +65,11 @@ const SchedulePlanPage = () => {
       else planner.addShift(rowOwned)
    }
 
-   if (!planner.ready) {
-      return <p className="text-text-500 text-sm">Ładowanie harmonogramów…</p>
-   }
-
    return (
+      <RequireOwner title="Harmonogram pracy">
+         {!planner.ready ? (
+            <p className="text-text-500 text-sm">Ładowanie harmonogramów…</p>
+         ) : (
       <div className="space-y-8">
          <BackLink href="/schedule" label="Powrót do harmonogramów" />
 
@@ -179,6 +180,8 @@ const SchedulePlanPage = () => {
             />
          ) : null}
       </div>
+         )}
+      </RequireOwner>
    )
 }
 

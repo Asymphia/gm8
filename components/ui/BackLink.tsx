@@ -5,7 +5,7 @@ interface BackLinkProps {
    label?: string
 }
 
-const BackLink = ({ href, label = "Back" }: BackLinkProps) => {
+const BackLink = ({ href, label = "Wstecz" }: BackLinkProps) => {
    return (
       <Link
          href={href}

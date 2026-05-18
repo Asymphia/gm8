@@ -1,9 +1,12 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import BackLink from "@/components/ui/BackLink"
 import Button from "@/components/ui/Button"
 import { mockDb } from "@/lib/mock-db"
+import { useOperational } from "@/components/operations/OperationalProvider"
+import { loadDeliveriesBrowser, saveDeliveriesBrowser } from "@/lib/deliveries-storage"
 
 interface DraftItem {
    productId: number
@@ -13,6 +16,8 @@ interface DraftItem {
 }
 
 const RegisterDeliveryPage = () => {
+   const router = useRouter()
+   const { receiveDeliveryItems } = useOperational()
    const [supplierName, setSupplierName] = useState("")
    const [deliveryDate, setDeliveryDate] = useState("")
    const [deliveryType, setDeliveryType] = useState<"supplier" | "internal_transfer">("supplier")
@@ -42,29 +47,65 @@ const RegisterDeliveryPage = () => {
       setItems(previous => previous.map(item => (item.productId === productId ? { ...item, [field]: value } : item)))
    }
 
+   const handleSave = () => {
+      const store = loadDeliveriesBrowser()
+      const selectedLines = items
+         .filter(item => item.selected && Number(item.quantity) > 0 && item.expiryDate)
+         .map(item => ({
+            product_id: item.productId,
+            quantity: Number(item.quantity),
+            expiry_date: item.expiryDate,
+            supplier_name: supplierName.trim(),
+         }))
+
+      if (selectedLines.length === 0) return
+
+      const id = store.nextId
+      const deliveredAt = `${deliveryDate}T08:00:00.000Z`
+
+      const isInternal = deliveryType === "internal_transfer"
+
+      store.deliveries.unshift({
+         id,
+         delivered_at: deliveredAt,
+         type: deliveryType,
+         supplier_name: supplierName.trim(),
+         status: isInternal ? "accepted" : "pending",
+         items: selectedLines,
+      })
+      store.nextId = id + 1
+      saveDeliveriesBrowser(store)
+
+      if (isInternal) {
+         receiveDeliveryItems(selectedLines)
+      }
+
+      router.push("/warehouse/deliveries")
+   }
+
    return (
       <div className="space-y-6">
-         <BackLink href="/warehouse/deliveries" label="Back to deliveries" />
+         <BackLink href="/warehouse/deliveries" label="Powrót do dostaw" />
          <div>
-            <h1>Register Delivery</h1>
-            <p className="text-text-500 mt-1">Create delivery draft with supplier and item quantities.</p>
+            <h1>Rejestracja dostawy</h1>
+            <p className="text-text-500 mt-1">Utwórz szkic dostawy z dostawcą i ilościami pozycji.</p>
          </div>
 
          <section className="rounded-sm border border-border-300 bg-background p-4">
-            <h2 className="text-text-700 mb-3 text-lg font-medium">Delivery data</h2>
+            <h2 className="text-text-700 mb-3 text-lg font-medium">Dane dostawy</h2>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                <label className="space-y-1">
-                  <span className="text-text-700 text-sm font-medium">Supplier</span>
+                  <span className="text-text-700 text-sm font-medium">Dostawca</span>
                   <input
                      type="text"
-                     placeholder="e.g. FreshFarm"
+                     placeholder="np. Świeże Pole"
                      value={supplierName}
                      onChange={event => setSupplierName(event.target.value)}
                      className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                   />
                </label>
                <label className="space-y-1">
-                  <span className="text-text-700 text-sm font-medium">Delivery date</span>
+                  <span className="text-text-700 text-sm font-medium">Data dostawy</span>
                   <input
                      type="date"
                      value={deliveryDate}
@@ -73,14 +114,14 @@ const RegisterDeliveryPage = () => {
                   />
                </label>
                <label className="space-y-1">
-                  <span className="text-text-700 text-sm font-medium">Delivery type</span>
+                  <span className="text-text-700 text-sm font-medium">Typ dostawy</span>
                   <select
                      value={deliveryType}
                      onChange={event => setDeliveryType(event.target.value as "supplier" | "internal_transfer")}
                      className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                   >
-                     <option value="supplier">supplier</option>
-                     <option value="internal_transfer">internal_transfer</option>
+                     <option value="supplier">Dostawca zewnętrzny</option>
+                     <option value="internal_transfer">Transfer wewnętrzny</option>
                   </select>
                </label>
             </div>
@@ -89,10 +130,10 @@ const RegisterDeliveryPage = () => {
          <section className="overflow-x-auto rounded-sm border border-border-300 bg-background">
             <div className="grid min-w-[56rem] grid-cols-[3rem_minmax(0,1fr)_8rem_10rem_10rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
                <p />
-               <p>Product</p>
-               <p>Unit</p>
-               <p>Quantity</p>
-               <p>Expiry date</p>
+               <p>Produkt</p>
+               <p>J.m.</p>
+               <p>Ilość</p>
+               <p>Data ważności</p>
             </div>
             {items.map(item => {
                const product = mockDb.product_catalog.find(row => row.id === item.productId)
@@ -106,11 +147,11 @@ const RegisterDeliveryPage = () => {
                            type="checkbox"
                            checked={item.selected}
                            onChange={() => toggleItemSelection(item.productId)}
-                           aria-label={`Include ${product?.name ?? "product"}`}
+                           aria-label={`Uwzględnij ${product?.name ?? "produkt"}`}
                            className="h-4 w-4 accent-primary-500"
                         />
                      </div>
-                     <p>{product?.name ?? "Unknown product"}</p>
+                     <p>{product?.name ?? "Nieznany produkt"}</p>
                      <p>{product?.unit ?? "-"}</p>
                      <input
                         type="number"
@@ -135,14 +176,14 @@ const RegisterDeliveryPage = () => {
 
          <div className="flex flex-col justify-between gap-3 rounded-sm border border-border-300 bg-background p-4 sm:flex-row sm:items-center">
             <p className="text-text-500 text-sm">
-               Selected products: <span className="text-text-700 font-medium">{selectedItemsCount}</span>
+               Wybrane produkty: <span className="text-text-700 font-medium">{selectedItemsCount}</span>
             </p>
             <div className="flex gap-2">
-               <Button type="button" variant="outline">
-                  Cancel
+               <Button type="button" variant="outline" onClick={() => router.push("/warehouse/deliveries")}>
+                  Anuluj
                </Button>
-               <Button type="button" disabled={!isDraftReady}>
-                  Save delivery draft
+               <Button type="button" disabled={!isDraftReady} onClick={handleSave}>
+                  Zapisz szkic dostawy
                </Button>
             </div>
          </div>

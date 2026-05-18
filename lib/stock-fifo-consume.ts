@@ -12,7 +12,6 @@ export interface StockShortage {
 
 const roundQty = (value: number) => Number(value.toFixed(5))
 
-/** Aggregate duplicate product IDs into one demand per product (kitchen / cashier totals). */
 export function mergeStockDemands(raw: StockDemand[]): StockDemand[] {
    const acc = new Map<number, number>()
    for (const d of raw) {
@@ -21,7 +20,6 @@ export function mergeStockDemands(raw: StockDemand[]): StockDemand[] {
    return [...acc.entries()].map(([product_id, quantity]) => ({ product_id, quantity: roundQty(quantity) }))
 }
 
-/** Earliest-expiry FIFO per product — returns new lines array without mutating the input */
 export function consumeStockFifo(orig: StockRow[], demands: StockDemand[]): { ok: true; lines: StockRow[] } | { ok: false; lines: StockRow[]; shortage: StockShortage[] } {
    const merged = mergeStockDemands(demands).filter(d => d.quantity > 1e-7)
    const lines = orig.map(row => ({ ...row }))
