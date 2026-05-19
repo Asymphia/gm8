@@ -1,19 +1,21 @@
 "use client"
 
 import {
-   authenticate,
    clearAuthSession,
    loadAuthSession,
+   loginWithBackend,
+   logoutFromBackend,
    saveAuthSession,
    type AuthSession,
 } from "@/lib/auth"
+import { ApiError, AUTH_SESSION_EXPIRED_EVENT } from "@/lib/api/client"
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 
 interface AuthContextValue {
    ready: boolean
    session: AuthSession | null
-   login: (email: string, password: string) => { ok: true } | { ok: false; error: string }
-   logout: () => void
+   login: (email: string, password: string) => Promise<{ ok: true } | { ok: false; error: string }>
+   logout: () => Promise<void>
    isOwner: boolean
    isEmployee: boolean
 }
@@ -31,18 +33,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
    }, [])
 
-   const login = useCallback((email: string, password: string) => {
-      const next = authenticate(email, password)
-      if (!next) {
-         return { ok: false as const, error: "Nieprawidłowy e-mail lub hasło (użyj hasła „demo”)." }
+   useEffect(() => {
+      const onExpired = () => {
+         clearAuthSession()
+         setSession(null)
       }
-      saveAuthSession(next)
-      setSession(next)
-      return { ok: true as const }
+      window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, onExpired)
+      return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, onExpired)
    }, [])
 
-   const logout = useCallback(() => {
-      clearAuthSession()
+   const login = useCallback(async (email: string, password: string) => {
+      try {
+         const next = await loginWithBackend(email, password)
+         saveAuthSession(next)
+         setSession(next)
+         return { ok: true as const }
+      } catch (error) {
+         const message =
+            error instanceof ApiError
+               ? error.message
+               : error instanceof Error
+                 ? error.message
+                 : "Nie udało się zalogować."
+         return { ok: false as const, error: message }
+      }
+   }, [])
+
+   const logout = useCallback(async () => {
+      await logoutFromBackend()
       setSession(null)
    }, [])
 

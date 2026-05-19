@@ -94,6 +94,12 @@
       text-size-adjust: 100%;
    }
 
+   html,
+   body {
+      width: 100%;
+      min-height: 100%;
+   }
+
    body {
       font-family: var(--font-dm-sans);
       background-color: var(--foreground);
@@ -218,7 +224,14 @@
    }
 
    .app-main-pad {
-      padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+   }
+
+   @media (max-width: 1023px) {
+      [data-nextjs-toast],
+      [data-next-mark] {
+         display: none !important;
+      }
    }
 
    @media (min-width: 768px) {

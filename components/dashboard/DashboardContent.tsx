@@ -6,8 +6,10 @@ import { useAuth } from "@/components/auth/AuthProvider"
 import DayPlanSection from "@/components/dashboard/DayPlanSection"
 import { useOperational } from "@/components/operations/OperationalProvider"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
+import { isApiEnabled } from "@/lib/api/config"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
+import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
 import { mockDb, type OrderStatus } from "@/lib/mock-db"
-import { readRecipeCatalogForOps } from "@/lib/operational-mock-storage"
 
 const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
    new: "Nowe",
@@ -30,20 +32,22 @@ function daysUntilExpiry(isoDate: string): number {
 const DashboardContent = () => {
    const { isOwner } = useAuth()
    const ops = useOperational()
+   const { catalog, ready: recipesReady } = useRecipeCatalog()
+   const { products } = useProductCatalog()
+   const useApi = isApiEnabled()
 
    const primaryLinks = useMemo(() => {
       void ops.recipeCatalogRevision
-      const catalog = readRecipeCatalogForOps()
-      const recipesActive = catalog.recipes.filter(r => r.is_active).length
-      const announcementsLive = mockDb.announcements.filter(a => a.is_published).length
-
+      const recipesActive = recipesReady
+         ? catalog.recipes.filter(r => r.is_active).length
+         : mockDb.recipes.filter(r => r.is_active).length
       const newOrders = ops.ready ? ops.orders.filter(o => o.status === "new").length : 0
       const totalOrders = ops.ready ? ops.orders.length : 0
 
       const stockLines = ops.ready ? ops.stock.length : 0
       const skuCount = new Set(ops.ready ? ops.stock.map(l => l.product_id) : []).size
 
-      return [
+      const links = [
          {
             href: "/warehouse",
             label: "Magazyn",
@@ -51,13 +55,17 @@ const DashboardContent = () => {
             value: ops.ready ? `${stockLines}` : "…",
             sub: ops.ready ? `${skuCount} SKU` : "",
          },
-         {
-            href: "/recipes",
-            label: "Przepisy",
-            description: "Księga receptur i składniki per porcja.",
-            value: String(recipesActive),
-            sub: "aktywne przepisy",
-         },
+         ...(isOwner
+            ? [
+                 {
+                    href: "/recipes",
+                    label: "Przepisy",
+                    description: "Księga receptur i składniki per porcja.",
+                    value: String(recipesActive),
+                    sub: "aktywne przepisy",
+                 },
+              ]
+            : []),
          {
             href: "/orders",
             label: "Zamówienia",
@@ -70,19 +78,20 @@ const DashboardContent = () => {
             label: "Harmonogram",
             description: isOwner
                ? "Kalendarz zmian per pracownik · edycja w przeglądarce."
-               : "Plan dnia i ogłoszenia zespołu.",
-            value: `${mockDb.schedules.length}`,
-            sub: isOwner ? "wpisy demo" : "tylko podgląd",
+               : "Twój grafik — dzień i tydzień.",
+            value: isOwner ? "Kalendarz" : "Grafik",
+            sub: isOwner ? "edycja zmian" : "tydzień / dzień",
          },
          {
-            href: "/notifications",
-            label: "Powiadomienia",
-            description: "Komunikaty i tablica.",
-            value: `${announcementsLive}`,
+            href: isOwner ? "/notifications" : "/notifications/board",
+            label: "Ogłoszenia",
+            description: isOwner ? "Komunikaty i tablica ogłoszeń." : "Opublikowane komunikaty zespołu.",
+            value: useApi ? "—" : String(mockDb.announcements.filter(a => a.is_published).length),
             sub: "opublikowane",
          },
       ]
-   }, [isOwner, ops.orders, ops.ready, ops.recipeCatalogRevision, ops.stock])
+      return links
+   }, [isOwner, ops.orders, ops.ready, ops.recipeCatalogRevision, ops.stock, recipesReady, catalog.recipes, useApi])
 
    const hubItems = primaryLinks.map(({ href, label, description, value, sub }) => ({
       href,
@@ -94,8 +103,6 @@ const DashboardContent = () => {
    const recentOrders = useMemo(() => {
       void ops.recipeCatalogRevision
       if (!ops.ready) return []
-
-      const catalog = readRecipeCatalogForOps()
 
       return [...ops.orders]
          .sort((a, b) => b.id - a.id)
@@ -110,12 +117,10 @@ const DashboardContent = () => {
                statusLabel: ORDER_STATUS_LABEL[order.status] ?? order.status,
             }
          })
-   }, [ops.order_items, ops.orders, ops.ready, ops.recipeCatalogRevision])
+   }, [catalog.recipes, ops.order_items, ops.orders, ops.ready, ops.recipeCatalogRevision])
 
    const stockAlerts = useMemo(() => {
       if (!ops.ready) return { lowQty: [], expiringSoon: [] }
-
-      const byId = mockDb.product_catalog
 
       const lines = [...ops.stock]
       const lowQty = lines
@@ -124,7 +129,7 @@ const DashboardContent = () => {
          .slice(0, 5)
          .map(l => ({
             stockId: l.id,
-            name: byId.find(p => p.id === l.product_id)?.name ?? `Produkt #${l.product_id}`,
+            name: products.find(p => p.id === l.product_id)?.name ?? `Produkt #${l.product_id}`,
             qty: l.quantity,
             expiry: l.expiry_date,
             daysLeft: daysUntilExpiry(l.expiry_date),
@@ -133,7 +138,7 @@ const DashboardContent = () => {
       const expiringSoon = lines
          .map(l => ({
             stockId: l.id,
-            name: byId.find(p => p.id === l.product_id)?.name ?? `Produkt #${l.product_id}`,
+            name: products.find(p => p.id === l.product_id)?.name ?? `Produkt #${l.product_id}`,
             qty: l.quantity,
             expiry: l.expiry_date,
             daysLeft: daysUntilExpiry(l.expiry_date),
@@ -143,7 +148,7 @@ const DashboardContent = () => {
          .slice(0, 5)
 
       return { lowQty, expiringSoon }
-   }, [ops.ready, ops.stock])
+   }, [ops.ready, ops.stock, products])
 
    const greeting = useMemo(() => new Intl.DateTimeFormat("pl-PL", {
       weekday: "long",

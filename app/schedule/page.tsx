@@ -1,23 +1,21 @@
 "use client"
 
 import { useAuth } from "@/components/auth/AuthProvider"
-import FeatureSection from "@/components/features/FeatureSection"
+import EmployeeShiftCalendar from "@/components/schedule/EmployeeShiftCalendar"
 import { useSchedulePlanner } from "@/components/schedule/SchedulePlannerProvider"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
-import { APP_FEATURE_GROUPS } from "@/lib/feature-map"
 import { mockDb } from "@/lib/mock-db"
 import Link from "next/link"
 
 const SchedulePage = () => {
    const { isOwner } = useAuth()
-   const scheduleGroup = APP_FEATURE_GROUPS.find(group => group.route === "/schedule")
    const planner = useSchedulePlanner()
 
    const ownerItems = [
       {
          href: "/schedule/plan",
          label: "Zmiany w kalendarzu",
-         description: "FullCalendar — jeden pracownik naraz · zapis w localStorage.",
+         description: "FullCalendar — jeden pracownik naraz · edycja w API.",
          value: planner.ready ? String(planner.shifts.length) : "…",
       },
       {
@@ -28,50 +26,51 @@ const SchedulePage = () => {
       },
    ]
 
-   const employeeItems = [
-      {
-         href: "/",
-         label: "Plan dnia",
-         description: "Twoje zaplanowane zmiany na dziś — na pulpicie.",
-         value: "Dziś",
-      },
-      {
-         href: "/notifications/board",
-         label: "Ogłoszenia",
-         description: "Przeglądaj komunikaty zespołu (tylko odczyt).",
-         value: String(mockDb.announcements.filter(a => a.is_published).length),
-      },
-   ]
+   if (!isOwner) {
+      return (
+         <div className="space-y-6">
+            <div>
+               <h1>Mój grafik</h1>
+               <p className="text-text-500 mt-1 max-w-2xl">
+                  Twój plan zmian — widok dnia i tygodnia. Tylko podgląd; zmiany ustala właściciel w{" "}
+                  <span className="text-text-400">kalendarzu zespołu</span>.
+               </p>
+            </div>
 
-   const items = isOwner ? ownerItems : employeeItems
+            {planner.loadError ? (
+               <p className="text-warning text-sm">{planner.loadError}</p>
+            ) : null}
+
+            {!planner.ready ? (
+               <p className="text-text-500 text-sm">Ładowanie grafiku…</p>
+            ) : planner.shifts.length === 0 ? (
+               <p className="text-text-500 text-sm">
+                  Brak zaplanowanych zmian w tym okresie. Sprawdź ponownie później lub skontaktuj się z
+                  kierownikiem.
+               </p>
+            ) : null}
+
+            <div className="border-border-300 rounded-md border bg-background p-2 shadow-sm sm:p-3">
+               <EmployeeShiftCalendar plannerShifts={planner.shifts} />
+            </div>
+         </div>
+      )
+   }
 
    return (
       <div className="space-y-8">
          <div>
             <h1>Harmonogram</h1>
             <p className="text-text-500 mt-1 max-w-2xl">
-               {isOwner ? (
-                  <>
-                     Plan oparty na kalendarzu — zmiany per pracownik, z edycją i zapisem w przeglądarce. Szczegóły:{" "}
-                     <Link href="/schedule/plan" className="text-primary-500 font-medium hover:underline">
-                        Zmiany w kalendarzu
-                     </Link>
-                     .
-                  </>
-               ) : (
-                  <>
-                     Jako pracownik widzisz swój plan dnia na{" "}
-                     <Link href="/" className="text-primary-500 font-medium hover:underline">
-                        pulpicie
-                     </Link>{" "}
-                     oraz ogłoszenia zespołu.
-                  </>
-               )}
+               Plan oparty na kalendarzu — zmiany per pracownik. Szczegóły:{" "}
+               <Link href="/schedule/plan" className="text-primary-500 font-medium hover:underline">
+                  Zmiany w kalendarzu
+               </Link>
+               .
             </p>
          </div>
 
-         <HubNavigationGrid items={items} />
-         {scheduleGroup ? <FeatureSection group={scheduleGroup} /> : null}
+         <HubNavigationGrid items={ownerItems} />
       </div>
    )
 }

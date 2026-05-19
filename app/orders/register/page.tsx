@@ -4,9 +4,12 @@ import { useMemo, useState } from "react"
 import BackLink from "@/components/ui/BackLink"
 import Button from "@/components/ui/Button"
 import { useOperational } from "@/components/operations/OperationalProvider"
-import { readRecipeCatalogForOps, buildDemandsFromRecipe } from "@/lib/operational-mock-storage"
+import { buildDemandsFromRecipe } from "@/lib/operational-mock-storage"
 import { mergeStockDemands } from "@/lib/stock-fifo-consume"
-import { mockDb, type OrderStatus } from "@/lib/mock-db"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
+import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
+import { ApiError } from "@/lib/api/client"
+import type { OrderStatus } from "@/lib/mock-db"
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
    new: "Nowe",
@@ -16,23 +19,26 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
    cancelled: "Anulowane",
 }
 
-function formatStockImpact(recipeId: number, portions: number): string {
-   const catalog = readRecipeCatalogForOps()
-   const demands = mergeStockDemands(buildDemandsFromRecipe(catalog, recipeId, portions))
-   if (demands.length === 0) return "Brak składników w księdze dla tego przepisu."
-
-   return demands
-      .map(d => {
-         const product = mockDb.product_catalog.find(p => p.id === d.product_id)
-         const unit = product?.unit ?? ""
-         return `${product?.name ?? `Produkt #${d.product_id}`} −${d.quantity} ${unit}`.trim()
-      })
-      .join(" · ")
-}
-
 const OrderRegistrationPage = () => {
+   const { productById } = useProductCatalog()
+   const { catalog } = useRecipeCatalog()
+
+   function formatStockImpact(recipeId: number, portions: number): string {
+      const demands = mergeStockDemands(buildDemandsFromRecipe(catalog, recipeId, portions))
+      if (demands.length === 0) return "Brak składników w księdze dla tego przepisu."
+
+      return demands
+         .map(d => {
+            const product = productById(d.product_id)
+            const unit = product?.unit ?? ""
+            return `${product?.name ?? `Produkt #${d.product_id}`} −${d.quantity} ${unit}`.trim()
+         })
+         .join(" · ")
+   }
+
    const {
       ready,
+      loadError,
       orders,
       order_items,
       activeRecipesPicklist,
@@ -50,7 +56,6 @@ const OrderRegistrationPage = () => {
 
       return [...orders].sort((a, b) => b.id - a.id).map(order => {
          const item = order_items.find(i => i.order_id === order.id)
-         const catalog = readRecipeCatalogForOps()
          const recipe = item ? catalog.recipes.find(r => r.id === item.recipe_id) : undefined
          const stockImpact =
             item !== undefined ? formatStockImpact(item.recipe_id, item.portions) : "—"
@@ -64,9 +69,9 @@ const OrderRegistrationPage = () => {
             orderId: order.id,
          }
       })
-   }, [orders, order_items, recipeCatalogRevision])
+   }, [catalog.recipes, orders, order_items, recipeCatalogRevision])
 
-   const handleCreateDraft = () => {
+   const handleCreateDraft = async () => {
       setFeedback(null)
       const recipeId = Number.parseInt(recipeSelection, 10)
       const portions = Number.parseInt(portionsField, 10)
@@ -78,26 +83,30 @@ const OrderRegistrationPage = () => {
          setFeedback("Podaj co najmniej 1 porcję.")
          return
       }
-      const id = registerOrder(recipeId, portions)
-      if (id === null) {
+      try {
+         const id = await registerOrder(recipeId, portions)
+         if (id === null) {
+            setFeedback(
+               "Nie udało się utworzyć szkicu — przepis nieaktywny, brak w księdze lub brak linii składników."
+            )
+            return
+         }
          setFeedback(
-            "Nie udało się utworzyć szkicu — przepis nieaktywny, brak w księdze lub brak linii składników."
+            `Utworzono ORD-${id} (nowe). Użyj Przyjmij, aby odjąć stan magazynowy metodą FIFO wg ważności.`
          )
-         return
+      } catch (err) {
+         setFeedback(err instanceof ApiError ? err.message : "Nie udało się utworzyć zamówienia.")
       }
-      setFeedback(
-         `Utworzono ORD-${id} (nowe). Użyj Przyjmij, aby odjąć stan magazynowy metodą FIFO wg ważności.`
-      )
    }
 
-   const handleAccept = (orderId: number) => {
+   const handleAccept = async (orderId: number) => {
       setFeedback(null)
-      const res = acceptOrder(orderId)
+      const res = await acceptOrder(orderId)
       if (!res.ok) {
          const shortage =
             res.shortage
                ?.map(s => {
-                  const n = mockDb.product_catalog.find(p => p.id === s.product_id)?.name
+                  const n = productById(s.product_id)?.name
                   return `${n ?? `#${s.product_id}`}: brakuje ${s.missing}`
                })
                .join("; ") ?? ""
@@ -113,6 +122,9 @@ const OrderRegistrationPage = () => {
 
    return (
       <div className="space-y-6">
+         {loadError ? (
+            <p className="text-warning rounded-sm border border-warning/30 bg-warning/10 px-4 py-3 text-sm">{loadError}</p>
+         ) : null}
          <BackLink href="/orders" label="Powrót do zamówień" />
          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>

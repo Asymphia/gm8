@@ -9,8 +9,8 @@ const RecipeTemplatesPage = () => {
    const router = useRouter()
    const { ready, catalog, templates, createFromTemplate } = useRecipeCatalog()
 
-   const handleApply = (baseRecipeId: number, fallbackName: string) => {
-      const id = createFromTemplate(baseRecipeId, `${fallbackName} (szkic)`)
+   const handleApply = async (baseRecipeId: number, fallbackName: string) => {
+      const id = await createFromTemplate(baseRecipeId, `${fallbackName} (szkic)`)
       if (id < 1) return
       router.push(`/recipes/${id}/edit`)
    }

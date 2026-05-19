@@ -3,13 +3,35 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import BackLink from "@/components/ui/BackLink"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
+import { useOperational } from "@/components/operations/OperationalProvider"
+import { isApiEnabled } from "@/lib/api/config"
+import { fetchInventories, inventoryDtoToOperation } from "@/lib/api/inventory-api"
 import type { InventoryOperation } from "@/lib/inventory-operations"
 import { INVENTORY_OPERATIONS_STORAGE_KEY, readInventoryOperations } from "@/lib/inventory-operations"
 
 const InventoriesListPage = () => {
+   const useApi = isApiEnabled()
+   const { stock } = useOperational()
+   const { products } = useProductCatalog()
    const [operations, setOperations] = useState<InventoryOperation[]>([])
 
    useEffect(() => {
+      if (useApi) {
+         void (async () => {
+            try {
+               const list = await fetchInventories()
+               const completed = list
+                  .filter(i => i.completedAt)
+                  .map(dto => inventoryDtoToOperation(dto, stock, products))
+               setOperations(completed)
+            } catch {
+               setOperations([])
+            }
+         })()
+         return
+      }
+
       const load = () => setOperations(readInventoryOperations())
       queueMicrotask(load)
 
@@ -20,7 +42,7 @@ const InventoriesListPage = () => {
       }
       window.addEventListener("storage", onStorage)
       return () => window.removeEventListener("storage", onStorage)
-   }, [])
+   }, [useApi, stock, products])
 
    return (
       <div className="space-y-6">

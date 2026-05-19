@@ -2,10 +2,11 @@
 
 import BackLink from "@/components/ui/BackLink"
 import { useOperational } from "@/components/operations/OperationalProvider"
-import { mockDb } from "@/lib/mock-db"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 
 const StockLevelsPage = () => {
    const { ready, stock } = useOperational()
+   const { productById } = useProductCatalog()
 
    if (!ready) {
       return <p className="text-text-500 text-sm">Ładowanie stanów…</p>
@@ -13,7 +14,7 @@ const StockLevelsPage = () => {
 
    const STOCK_ROWS = stock
       .map(row => {
-         const product = mockDb.product_catalog.find(p => p.id === row.product_id)
+         const product = productById(row.product_id)
          return {
             id: row.id,
             product: product?.name ?? `Produkt #${row.product_id}`,
@@ -58,30 +59,28 @@ const StockLevelsPage = () => {
 
          <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
             <div className="grid min-w-[52rem] grid-cols-[6rem_minmax(0,1fr)_6rem_8rem_10rem_minmax(0,1fr)_8rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>ID partii</p>
+               <p>ID</p>
                <p>Produkt</p>
                <p>J.m.</p>
-               <p className="text-right">Ilość</p>
+               <p>Ilość</p>
                <p>Ważność</p>
                <p>Dostawca</p>
-               <p className="text-center">Katalog</p>
+               <p>Status</p>
             </div>
             {STOCK_ROWS.map(row => (
                <div
                   key={row.id}
-                  className="grid min-w-[52rem] grid-cols-[6rem_minmax(0,1fr)_6rem_8rem_10rem_minmax(0,1fr)_8rem] border-b border-border-300 px-4 py-3 text-sm text-text-500 last:border-0"
+                  className="grid min-w-[52rem] grid-cols-[6rem_minmax(0,1fr)_6rem_8rem_10rem_minmax(0,1fr)_8rem] border-b border-border-300 px-4 py-3 text-sm last:border-b-0"
                >
-                  <p className="font-mono text-xs">{row.id}</p>
-                  <p className="text-text-700 font-medium">{row.product}</p>
-                  <p>{row.unit}</p>
-                  <p className="text-right tabular-nums">
-                     {row.quantity} {row.unit}
+                  <p className="text-text-500 tabular-nums">{row.id}</p>
+                  <p className="text-text-700">{row.product}</p>
+                  <p className="text-text-500">{row.unit}</p>
+                  <p className="text-text-700 tabular-nums">{row.quantity}</p>
+                  <p className="text-text-500">{row.expiryDate || "—"}</p>
+                  <p className="text-text-500">{row.supplier}</p>
+                  <p className={row.active ? "text-primary-500" : "text-text-300"}>
+                     {row.active ? "Aktywny" : "Nieaktywny"}
                   </p>
-                  <p>{row.expiryDate}</p>
-                  <p className="min-w-0 truncate" title={row.supplier}>
-                     {row.supplier}
-                  </p>
-                  <p className="text-center">{row.active ? "Aktywny" : "Nieaktywny"}</p>
                </div>
             ))}
          </div>

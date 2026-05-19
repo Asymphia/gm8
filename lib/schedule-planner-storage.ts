@@ -27,7 +27,7 @@ function sanitizeShift(raw: unknown): PlannerShift | null {
    const end_time = o.end_time
    const note = o.note
    if (typeof id !== "number" || !Number.isFinite(id) || id < 1) return null
-   if (typeof user_id !== "number" || !Number.isFinite(user_id) || user_id < 1) return null
+   if (typeof user_id !== "string" || user_id.trim().length === 0) return null
    if (typeof date !== "string" || typeof start_time !== "string" || typeof end_time !== "string" || typeof note !== "string") {
       return null
    }

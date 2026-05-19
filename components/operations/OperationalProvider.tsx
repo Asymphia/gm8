@@ -1,6 +1,19 @@
 "use client"
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
+import { useAuth } from "@/components/auth/AuthProvider"
+import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
+import { loadAuthSession } from "@/lib/auth"
+import { getAccessToken } from "@/lib/api/tokens"
+import { ApiError } from "@/lib/api/client"
+import { isApiEnabled } from "@/lib/api/config"
+import {
+   acceptOrderApi,
+   createOrder,
+   deleteOrderApi,
+   fetchOperationalSnapshot,
+   updateOrderStatusApi,
+} from "@/lib/api/orders-api"
 import { consumeStockFifo, mergeStockDemands } from "@/lib/stock-fifo-consume"
 import {
    saveOperationalBrowser,
@@ -21,6 +34,7 @@ type AcceptResult =
 
 interface OperationalContextValue {
    ready: boolean
+   loadError: string | null
    recipeCatalogRevision: number
 
    stock: OperationalPersisted["stock"]
@@ -29,10 +43,11 @@ interface OperationalContextValue {
 
    activeRecipesPicklist: Array<{ id: number; name: string; ingredientLines: number }>
 
-   registerOrder: (recipeId: number, portions: number) => number | null
-   acceptOrder: (orderId: number) => AcceptResult
-   updateOrderStatus: (orderId: number, status: OrderStatus) => void
-   removeOrder: (orderId: number) => void
+   refresh: () => Promise<void>
+   registerOrder: (recipeId: number, portions: number) => Promise<number | null>
+   acceptOrder: (orderId: number) => Promise<AcceptResult>
+   updateOrderStatus: (orderId: number, status: OrderStatus) => Promise<void>
+   removeOrder: (orderId: number) => Promise<void>
    receiveDeliveryItems: (items: StoredDeliveryItem[]) => void
 }
 
@@ -41,22 +56,55 @@ const OperationalContext = createContext<OperationalContextValue | null>(null)
 const DEFAULT_OPERATOR_ID = 1
 
 export function OperationalProvider({ children }: { children: ReactNode }) {
+   const { session } = useAuth()
+   const { catalog, ready: recipesReady } = useRecipeCatalog()
+   const useApi = isApiEnabled()
    const [ready, setReady] = useState(false)
+   const [loadError, setLoadError] = useState<string | null>(null)
    const [operational, setOperational] = useState<OperationalPersisted>(() => createSeedOperational())
    const [recipeCatalogRevision, bumpRecipeRevision] = useState(0)
 
-   useEffect(() => {
-      queueMicrotask(() => {
+   const applySnapshot = useCallback((snapshot: OperationalPersisted) => {
+      setOperational(snapshot)
+   }, [])
+
+   const refresh = useCallback(async () => {
+      if (useApi) {
+         if (!session || !getAccessToken()) return
+         try {
+            const snapshot = await fetchOperationalSnapshot()
+            applySnapshot(snapshot)
+            setLoadError(null)
+         } catch (err) {
+            setLoadError(err instanceof ApiError ? err.message : "Nie udało się pobrać danych operacyjnych.")
+         }
+      } else {
          const stored = loadOperationalBrowser()
-         if (stored) setOperational(stored)
-         else {
-            const seed = createSeedOperational()
-            saveOperationalBrowser(seed)
-            setOperational(seed)
+         applySnapshot(stored ?? createSeedOperational())
+         setLoadError(null)
+      }
+   }, [applySnapshot, session, useApi])
+
+   useEffect(() => {
+      if (useApi && (!session || !getAccessToken())) {
+         setReady(true)
+         return
+      }
+      void (async () => {
+         if (useApi) {
+            await refresh()
+         } else {
+            const stored = loadOperationalBrowser()
+            if (stored) applySnapshot(stored)
+            else {
+               const seed = createSeedOperational()
+               saveOperationalBrowser(seed)
+               applySnapshot(seed)
+            }
          }
          setReady(true)
-      })
-   }, [])
+      })()
+   }, [applySnapshot, refresh, session, useApi])
 
    useEffect(() => {
       const onRecipeUpdate = () => bumpRecipeRevision(n => n + 1)
@@ -65,13 +113,13 @@ export function OperationalProvider({ children }: { children: ReactNode }) {
    }, [])
 
    useEffect(() => {
-      if (!ready) return
+      if (!ready || useApi) return
       saveOperationalBrowser(operational)
-   }, [operational, ready])
+   }, [operational, ready, useApi])
 
    const activeRecipesPicklist = useMemo(() => {
       void recipeCatalogRevision
-      const catalog = readRecipeCatalogForOps()
+      if (!recipesReady) return []
       return [...catalog.recipes]
          .filter(r => r.is_active)
          .sort((a, b) => a.name.localeCompare(b.name))
@@ -80,103 +128,164 @@ export function OperationalProvider({ children }: { children: ReactNode }) {
             name: r.name,
             ingredientLines: catalog.ingredients.filter(i => i.recipe_id === r.id).length,
          }))
-   }, [recipeCatalogRevision])
+   }, [catalog, recipeCatalogRevision, recipesReady])
 
-   const registerOrder = useCallback((recipeId: number, portions: number): number | null => {
-      const portionsN = Number(portions)
-      if (!Number.isFinite(portionsN) || portionsN < 1) return null
+   const registerOrder = useCallback(
+      async (recipeId: number, portions: number): Promise<number | null> => {
+         const portionsN = Number(portions)
+         if (!Number.isFinite(portionsN) || portionsN < 1) return null
 
-      const catalog = readRecipeCatalogForOps()
-      const recipe = catalog.recipes.find(r => r.id === recipeId)
-      if (!recipe?.is_active) return null
+         const recipe = catalog.recipes.find(r => r.id === recipeId)
+         if (!recipe?.is_active) return null
 
-      const lines = catalog.ingredients.filter(i => i.recipe_id === recipeId)
-      if (lines.length === 0) return null
+         const lines = catalog.ingredients.filter(i => i.recipe_id === recipeId)
+         if (lines.length === 0) return null
 
-      let createdId = -1
-      setOperational(prev => {
-         const id = prev.nextOrderId
-         createdId = id
-         return {
-            ...prev,
-            orders: [...prev.orders, { id, created_at: new Date().toISOString(), status: "new", user_id: DEFAULT_OPERATOR_ID }],
-            order_items: [...prev.order_items, { order_id: id, recipe_id: recipeId, portions: Math.floor(portionsN) }],
-            nextOrderId: id + 1,
-         }
-      })
-      return createdId < 0 ? null : createdId
-   }, [])
-
-   const acceptOrder = useCallback((orderId: number): AcceptResult => {
-      let result: AcceptResult = { ok: false, error: "Nie znaleziono zamówienia." }
-
-      setOperational(prev => {
-         const catalog = readRecipeCatalogForOps()
-         const order = prev.orders.find(o => o.id === orderId)
-         const item = prev.order_items.find(i => i.order_id === orderId)
-
-         if (!order || !item) {
-            result = { ok: false, error: "Nie znaleziono zamówienia." }
-            return prev
-         }
-
-         if (order.status !== "new") {
-            result = { ok: false, error: "Tylko nowe zamówienia mogą zużywać stan." }
-            return prev
-         }
-
-         const recipe = catalog.recipes.find(r => r.id === item.recipe_id)
-         if (!recipe?.is_active) {
-            result = { ok: false, error: "Przepis jest nieaktywny lub brakuje go w księdze." }
-            return prev
-         }
-
-         const ingredients = catalog.ingredients.filter(i => i.recipe_id === item.recipe_id)
-         if (ingredients.length === 0) {
-            result = { ok: false, error: "Przepis nie ma składników — najpierw dodaj produkty w Przepisach." }
-            return prev
-         }
-
-         const demands = mergeStockDemands(buildDemandsFromRecipe(catalog, item.recipe_id, item.portions))
-         const consume = consumeStockFifo(prev.stock, demands)
-
-         if (!consume.ok) {
-            result = {
-               ok: false,
-               error: "Niewystarczający stan dla co najmniej jednego produktu (FIFO wg ważności).",
-               shortage: consume.shortage,
+         if (useApi) {
+            const authSession = loadAuthSession()
+            if (!authSession?.userId) return null
+            try {
+               const created = await createOrder(authSession.userId, recipeId, portionsN)
+               await refresh()
+               return created.id
+            } catch (err) {
+               throw err
             }
-            return prev
          }
 
-         result = { ok: true }
-         return {
+         let createdId = -1
+         setOperational(prev => {
+            const id = prev.nextOrderId
+            createdId = id
+            return {
+               ...prev,
+               orders: [
+                  ...prev.orders,
+                  { id, created_at: new Date().toISOString(), status: "new", user_id: DEFAULT_OPERATOR_ID },
+               ],
+               order_items: [...prev.order_items, { order_id: id, recipe_id: recipeId, portions: Math.floor(portionsN) }],
+               nextOrderId: id + 1,
+            }
+         })
+         return createdId < 0 ? null : createdId
+      },
+      [catalog, refresh, useApi]
+   )
+
+   const acceptOrder = useCallback(
+      async (orderId: number): Promise<AcceptResult> => {
+         if (useApi) {
+            try {
+               const res = await acceptOrderApi(orderId)
+               await refresh()
+               if (!res.ok) {
+                  return {
+                     ok: false,
+                     error: res.error ?? "Nie udało się przyjąć zamówienia.",
+                     shortage: res.shortage?.map(s => ({ product_id: s.product_Id, missing: s.missing })),
+                  }
+               }
+               return { ok: true }
+            } catch (err) {
+               const message = err instanceof ApiError ? err.message : "Nie udało się przyjąć zamówienia."
+               return { ok: false, error: message }
+            }
+         }
+
+         let result: AcceptResult = { ok: false, error: "Nie znaleziono zamówienia." }
+
+         setOperational(prev => {
+            const order = prev.orders.find(o => o.id === orderId)
+            const item = prev.order_items.find(i => i.order_id === orderId)
+
+            if (!order || !item) {
+               result = { ok: false, error: "Nie znaleziono zamówienia." }
+               return prev
+            }
+
+            if (order.status !== "new") {
+               result = { ok: false, error: "Tylko nowe zamówienia mogą zużywać stan." }
+               return prev
+            }
+
+            const recipe = catalog.recipes.find(r => r.id === item.recipe_id)
+            if (!recipe?.is_active) {
+               result = { ok: false, error: "Przepis jest nieaktywny lub brakuje go w księdze." }
+               return prev
+            }
+
+            const ingredients = catalog.ingredients.filter(i => i.recipe_id === item.recipe_id)
+            if (ingredients.length === 0) {
+               result = { ok: false, error: "Przepis nie ma składników — najpierw dodaj produkty w Przepisach." }
+               return prev
+            }
+
+            const demands = mergeStockDemands(buildDemandsFromRecipe(catalog, item.recipe_id, item.portions))
+            const consume = consumeStockFifo(prev.stock, demands)
+
+            if (!consume.ok) {
+               result = {
+                  ok: false,
+                  error: "Niewystarczający stan dla co najmniej jednego produktu (FIFO wg ważności).",
+                  shortage: consume.shortage,
+               }
+               return prev
+            }
+
+            result = { ok: true }
+            return {
+               ...prev,
+               stock: consume.lines,
+               orders: prev.orders.map(o => (o.id === orderId ? { ...o, status: "accepted" as const } : o)),
+            }
+         })
+
+         return result
+      },
+      [catalog, refresh, useApi]
+   )
+
+   const removeOrder = useCallback(
+      async (orderId: number) => {
+         if (useApi) {
+            try {
+               await deleteOrderApi(orderId)
+               await refresh()
+            } catch (err) {
+               throw err
+            }
+            return
+         }
+         setOperational(prev => ({
             ...prev,
-            stock: consume.lines,
-            orders: prev.orders.map(o => (o.id === orderId ? { ...o, status: "accepted" as const } : o)),
+            orders: prev.orders.filter(o => o.id !== orderId),
+            order_items: prev.order_items.filter(i => i.order_id !== orderId),
+         }))
+      },
+      [refresh, useApi]
+   )
+
+   const updateOrderStatus = useCallback(
+      async (orderId: number, status: OrderStatus) => {
+         if (useApi) {
+            try {
+               await updateOrderStatusApi(orderId, status)
+               await refresh()
+            } catch (err) {
+               throw err
+            }
+            return
          }
-      })
-
-      return result
-   }, [])
-
-   const removeOrder = useCallback((orderId: number) => {
-      setOperational(prev => ({
-         ...prev,
-         orders: prev.orders.filter(o => o.id !== orderId),
-         order_items: prev.order_items.filter(i => i.order_id !== orderId),
-      }))
-   }, [])
-
-   const updateOrderStatus = useCallback((orderId: number, status: OrderStatus) => {
-      setOperational(prev => ({
-         ...prev,
-         orders: prev.orders.map(o => (o.id === orderId ? { ...o, status } : o)),
-      }))
-   }, [])
+         setOperational(prev => ({
+            ...prev,
+            orders: prev.orders.map(o => (o.id === orderId ? { ...o, status } : o)),
+         }))
+      },
+      [refresh, useApi]
+   )
 
    const receiveDeliveryItems = useCallback((items: StoredDeliveryItem[]) => {
-      if (items.length === 0) return
+      if (items.length === 0 || useApi) return
       setOperational(prev => {
          const lines: StockRow[] = prev.stock.map(s => ({ ...s }))
          let nextId = lines.length > 0 ? Math.max(...lines.map(s => s.id)) + 1 : 500
@@ -207,17 +316,19 @@ export function OperationalProvider({ children }: { children: ReactNode }) {
 
          return { ...prev, stock: lines }
       })
-   }, [])
+   }, [useApi])
 
    const value = useMemo(
       () =>
          ({
             ready,
+            loadError,
             recipeCatalogRevision,
             stock: operational.stock,
             orders: operational.orders,
             order_items: operational.order_items,
             activeRecipesPicklist,
+            refresh,
             registerOrder,
             acceptOrder,
             updateOrderStatus,
@@ -230,7 +341,9 @@ export function OperationalProvider({ children }: { children: ReactNode }) {
          operational.order_items,
          operational.orders,
          operational.stock,
+         loadError,
          ready,
+         refresh,
          registerOrder,
          removeOrder,
          updateOrderStatus,

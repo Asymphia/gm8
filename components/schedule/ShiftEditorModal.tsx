@@ -47,13 +47,14 @@ function deriveEndHmForAdd(presetStart: Date, presetEnd: Date): string {
 
 interface ShiftEditorModalProps {
    onClose: () => void
-   employeeId: number
+   employeeId: string
    employeeDisplayName: string
    editingShift: PlannerShift | null
    presetStart: Date
    presetEnd: Date
-   onCommit: (row: Omit<PlannerShift, "id">, editingId: number | null) => void
-   onDelete: (id: number) => void
+   onCommit: (row: Omit<PlannerShift, "id">, editingId: number | null) => void | Promise<void>
+   onDelete: (id: number) => void | Promise<void>
+   useApi?: boolean
 }
 
 const ShiftEditorModal = ({
@@ -65,6 +66,7 @@ const ShiftEditorModal = ({
    presetEnd,
    onCommit,
    onDelete,
+   useApi = false,
 }: ShiftEditorModalProps) => {
    const [dateStr, setDateStr] = useState(() => editingShift?.date ?? isoDateLocal(presetStart))
    const [startHm, setStartHm] = useState(() => editingShift?.start_time ?? hhmmLocal(presetStart))
@@ -97,8 +99,11 @@ const ShiftEditorModal = ({
          note,
       }
 
-      onCommit(row, editingShift?.id ?? null)
-      onClose()
+      void Promise.resolve(onCommit(row, editingShift?.id ?? null))
+         .then(() => onClose())
+         .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "Nie udało się zapisać zmiany.")
+         })
    }
 
    const handleDelete = () => {
@@ -106,8 +111,11 @@ const ShiftEditorModal = ({
       const ok =
          typeof window === "undefined" ? true : window.confirm("Usunąć tę zmianę z kalendarza?")
       if (!ok) return
-      onDelete(editingShift.id)
-      onClose()
+      void Promise.resolve(onDelete(editingShift.id))
+         .then(() => onClose())
+         .catch((err: unknown) => {
+            setError(err instanceof Error ? err.message : "Nie udało się usunąć zmiany.")
+         })
    }
 
    return (
@@ -178,7 +186,9 @@ const ShiftEditorModal = ({
                </div>
             </div>
             <p className="text-text-300 text-[11px] leading-snug">
-               Zapis w przeglądarce (localStorage). Zmiana obowiązuje dla wybranego pracownika.
+               {useApi
+                  ? "Zapis przez API. Zmiana obowiązuje dla wybranego pracownika."
+                  : "Zapis w przeglądarce (localStorage). Zmiana obowiązuje dla wybranego pracownika."}
             </p>
          </div>
       </Modal>

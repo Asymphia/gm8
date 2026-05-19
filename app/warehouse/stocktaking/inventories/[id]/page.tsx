@@ -4,20 +4,45 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import BackLink from "@/components/ui/BackLink"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
+import { useOperational } from "@/components/operations/OperationalProvider"
+import { isApiEnabled } from "@/lib/api/config"
+import { fetchInventoryById, inventoryDtoToOperation } from "@/lib/api/inventory-api"
 import type { InventoryOperation } from "@/lib/inventory-operations"
 import { INVENTORY_OPERATIONS_STORAGE_KEY, readInventoryOperations } from "@/lib/inventory-operations"
 
 const InventoryDetailPage = () => {
+   const useApi = isApiEnabled()
    const params = useParams()
    const id = typeof params?.id === "string" ? params.id : ""
+   const { stock } = useOperational()
+   const { products } = useProductCatalog()
    const [operation, setOperation] = useState<InventoryOperation | null | undefined>(undefined)
 
    useEffect(() => {
+      if (!id) {
+         setOperation(null)
+         return
+      }
+
+      if (useApi) {
+         void (async () => {
+            const numericId = id.startsWith("inv-") ? Number.parseInt(id.slice(4), 10) : Number.parseInt(id, 10)
+            if (!Number.isFinite(numericId)) {
+               setOperation(null)
+               return
+            }
+            try {
+               const dto = await fetchInventoryById(numericId)
+               setOperation(inventoryDtoToOperation(dto, stock, products))
+            } catch {
+               setOperation(null)
+            }
+         })()
+         return
+      }
+
       const load = () => {
-         if (!id) {
-            setOperation(null)
-            return
-         }
          const found = readInventoryOperations().find(op => op.id === id)
          setOperation(found ?? null)
       }
@@ -30,7 +55,7 @@ const InventoryDetailPage = () => {
       }
       window.addEventListener("storage", onStorage)
       return () => window.removeEventListener("storage", onStorage)
-   }, [id])
+   }, [id, useApi, stock, products])
 
    if (operation === undefined) {
       return (

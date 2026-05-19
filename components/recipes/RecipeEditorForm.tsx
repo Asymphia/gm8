@@ -3,8 +3,10 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import Button from "@/components/ui/Button"
-import { mockDb } from "@/lib/mock-db"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
+import { isApiEnabled } from "@/lib/api/config"
+import { mockDb } from "@/lib/mock-db"
 
 type LineRow = { key: string; product_id: number; quantity_per_portion: number }
 
@@ -13,7 +15,7 @@ const newLineRow = (): LineRow => ({
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
          ? crypto.randomUUID()
          : `row-${Date.now()}-${Math.random()}`,
-   product_id: mockDb.product_catalog[0]?.id ?? 1,
+   product_id: 1,
    quantity_per_portion: 0.1,
 })
 
@@ -26,6 +28,7 @@ interface RecipeEditorFormProps {
 export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFormProps) {
    const router = useRouter()
    const { ready, catalog, upsertRecipe } = useRecipeCatalog()
+   const { products } = useProductCatalog()
 
    const existing = recipeId !== null ? catalog.recipes.find(r => r.id === recipeId) : undefined
 
@@ -44,17 +47,17 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
    })
    const [error, setError] = useState<string | null>(null)
 
-   const products = mockDb.product_catalog.filter(p => p.is_active)
+   const activeProducts = products.filter(p => p.is_active)
 
    const title = mode === "create" ? "Nowy przepis" : `Edytuj przepis #${recipeId}`
 
    const productOptions = useMemo(
       () =>
-         products.map(p => ({
+         activeProducts.map(p => ({
             id: p.id,
             label: `${p.name} (${p.unit})`,
          })),
-      [products]
+      [activeProducts]
    )
 
    if (!ready) {
@@ -76,9 +79,9 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
 
    const handleUsuńRow = (key: string) => setLines(previous => (previous.length > 1 ? previous.filter(row => row.key !== key) : previous))
 
-   const handleSave = () => {
+   const handleSave = async () => {
       setError(null)
-      const id = upsertRecipe({
+      const id = await upsertRecipe({
          id: mode === "create" ? null : recipeId,
          name,
          is_active: isActive,
@@ -107,7 +110,7 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
                One recipe = <span className="text-text-700">wiele produktów</span>: add a line per ingredient.{" "}
                <span className="text-text-700">Ilość na porcję</span> is how much of that product one portion of the dish
                consumes; orders multiply it by portions and the operations layer subtracts stock when you accept the order.
-               Tylko mock — zapis w localStorage przeglądarki w tym prototypie.
+               {isApiEnabled() ? "Zapis przez API (BD-Projekt)." : "Tryb demo — zapis w localStorage przeglądarki."}
             </p>
          </header>
 
@@ -175,7 +178,7 @@ export function RecipeEditorForm({ mode, recipeId, cancelHref }: RecipeEditorFor
                            }
                            className="border-border-300 rounded-sm border px-3 py-2 text-sm outline-none sm:max-w-[10rem]"
                         />
-                        <span className="text-text-500 text-xs">{products.find(pr => pr.id === line.product_id)?.unit ?? ""}</span>
+                        <span className="text-text-500 text-xs">{activeProducts.find(pr => pr.id === line.product_id)?.unit ?? ""}</span>
                      </div>
                      <Button type="button" variant="ghost" size="sm" className="shrink-0" onClick={() => handleUsuńRow(line.key)}>
                         Usuń

@@ -21,7 +21,7 @@ export interface ScheduleRow {
    start_time: string
    end_time: string
    note: string
-   user_id: number
+   user_id: string
 }
 
 export interface AnnouncementRow {
@@ -31,7 +31,7 @@ export interface AnnouncementRow {
    created_at: string
    timestamp_updated_at: string
    is_published: boolean
-   user_id: number
+   user_id: string
 }
 
 export interface DeliveryRow {
@@ -138,18 +138,22 @@ export const mockDb = {
       },
    ] as UserRow[],
    schedules: [
-      { id: 1, date: "2026-05-05", start_time: "06:00", end_time: "14:00", note: "Przygotowanie poranne", user_id: 1 },
-      { id: 2, date: "2026-05-06", start_time: "07:30", end_time: "15:30", note: "Zmiana szkoleniowa", user_id: 2 },
-      { id: 3, date: "2026-05-07", start_time: "06:00", end_time: "22:00", note: "Podział — przygotowanie i zamknięcie", user_id: 1 },
-      { id: 4, date: "2026-05-08", start_time: "08:00", end_time: "16:00", note: "Sala", user_id: 2 },
-      { id: 5, date: "2026-05-09", start_time: "06:00", end_time: "14:00", note: "Brunch weekendowy", user_id: 3 },
-      { id: 6, date: "2026-05-09", start_time: "13:00", end_time: "21:00", note: "Obsługa", user_id: 2 },
-      { id: 7, date: "2026-05-10", start_time: "10:00", end_time: "18:00", note: "Niedziela — zastępstwo", user_id: 1 },
-      { id: 8, date: "2026-05-12", start_time: "06:00", end_time: "14:00", note: "Przygotowanie poranne", user_id: 1 },
-      { id: 9, date: "2026-05-12", start_time: "14:00", end_time: "22:00", note: "Obsługa", user_id: 2 },
-      { id: 10, date: "2026-05-13", start_time: "06:00", end_time: "14:00", note: "Kontrola stanów", user_id: 3 },
-      { id: 11, date: "2026-05-18", start_time: "06:00", end_time: "14:00", note: "Przygotowanie poranne", user_id: 1 },
-      { id: 12, date: "2026-05-18", start_time: "10:00", end_time: "18:00", note: "Obsługa sali", user_id: 2 },
+      { id: 1, date: "2026-05-05", start_time: "06:00", end_time: "14:00", note: "Przygotowanie poranne", user_id: "1" },
+      { id: 2, date: "2026-05-06", start_time: "07:30", end_time: "15:30", note: "Zmiana szkoleniowa", user_id: "2" },
+      { id: 3, date: "2026-05-07", start_time: "06:00", end_time: "22:00", note: "Podział — przygotowanie i zamknięcie", user_id: "1" },
+      { id: 4, date: "2026-05-08", start_time: "08:00", end_time: "16:00", note: "Sala", user_id: "2" },
+      { id: 5, date: "2026-05-09", start_time: "06:00", end_time: "14:00", note: "Brunch weekendowy", user_id: "3" },
+      { id: 6, date: "2026-05-09", start_time: "13:00", end_time: "21:00", note: "Obsługa", user_id: "2" },
+      { id: 7, date: "2026-05-10", start_time: "10:00", end_time: "18:00", note: "Niedziela — zastępstwo", user_id: "1" },
+      { id: 8, date: "2026-05-12", start_time: "06:00", end_time: "14:00", note: "Przygotowanie poranne", user_id: "1" },
+      { id: 9, date: "2026-05-12", start_time: "14:00", end_time: "22:00", note: "Obsługa", user_id: "2" },
+      { id: 10, date: "2026-05-13", start_time: "06:00", end_time: "14:00", note: "Kontrola stanów", user_id: "3" },
+      { id: 11, date: "2026-05-18", start_time: "06:00", end_time: "14:00", note: "Przygotowanie poranne", user_id: "1" },
+      { id: 12, date: "2026-05-18", start_time: "10:00", end_time: "18:00", note: "Obsługa sali", user_id: "2" },
+      { id: 13, date: "2026-05-19", start_time: "10:00", end_time: "18:00", note: "Zmiana dzienna", user_id: "2" },
+      { id: 14, date: "2026-05-20", start_time: "10:00", end_time: "18:00", note: "Zmiana dzienna", user_id: "2" },
+      { id: 15, date: "2026-05-21", start_time: "14:00", end_time: "22:00", note: "Zmiana wieczorna", user_id: "2" },
+      { id: 16, date: "2026-05-23", start_time: "08:00", end_time: "16:00", note: "Zmiana weekendowa", user_id: "2" },
    ] as ScheduleRow[],
    announcements: [
       {
@@ -159,7 +163,7 @@ export const mockDb = {
          created_at: "2026-05-07T14:00:00Z",
          timestamp_updated_at: "2026-05-07T14:00:00Z",
          is_published: true,
-         user_id: 1,
+         user_id: "1",
       },
       {
          id: 2,
@@ -168,7 +172,7 @@ export const mockDb = {
          created_at: "2026-05-06T18:30:00Z",
          timestamp_updated_at: "2026-05-06T18:45:00Z",
          is_published: true,
-         user_id: 1,
+         user_id: "1",
       },
    ] as AnnouncementRow[],
    product_catalog: [

@@ -1,9 +1,11 @@
 export interface EmployeeType {
+   id?: string
    name: string
    surname: string
    phone: string
    email: string
    active: boolean
+   roles?: string[]
 }
 
 export interface ProductCatalog {

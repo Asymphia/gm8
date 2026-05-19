@@ -6,7 +6,9 @@ import Modal from "@/components/ui/Modal"
 import { PageToolbar } from "@/components/ui/PageToolbar"
 import { ResponsiveDataView } from "@/components/ui/ResponsiveDataView"
 import { useOperational } from "@/components/operations/OperationalProvider"
-import { readRecipeCatalogForOps } from "@/lib/operational-mock-storage"
+import { useAuth } from "@/components/auth/AuthProvider"
+import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
+import { ApiError } from "@/lib/api/client"
 import type { OrderStatus } from "@/lib/mock-db"
 import { useMemo, useState } from "react"
 
@@ -21,8 +23,11 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 const STATUS_OPTIONS: OrderStatus[] = ["new", "accepted", "in_progress", "done", "cancelled"]
 
 const OrdersListPage = () => {
+   const { isOwner } = useAuth()
+   const { catalog } = useRecipeCatalog()
    const {
       ready,
+      loadError,
       orders,
       order_items,
       recipeCatalogRevision,
@@ -42,7 +47,6 @@ const OrdersListPage = () => {
          .sort((a, b) => b.id - a.id)
          .map(order => {
             const item = order_items.find(i => i.order_id === order.id)
-            const catalog = readRecipeCatalogForOps()
             const recipe = item ? catalog.recipes.find(r => r.id === item.recipe_id) : undefined
 
             return {
@@ -54,7 +58,7 @@ const OrdersListPage = () => {
                portions: item?.portions ?? "—",
             }
          })
-   }, [orders, order_items, recipeCatalogRevision])
+   }, [catalog.recipes, orders, order_items, recipeCatalogRevision])
 
    const orderSelectOptions = useMemo(
       () =>
@@ -71,6 +75,9 @@ const OrdersListPage = () => {
 
    return (
       <div className="page-stack">
+         {loadError ? (
+            <p className="text-warning rounded-sm border border-warning/30 bg-warning/10 px-4 py-3 text-sm">{loadError}</p>
+         ) : null}
          <PageToolbar
             back={<BackLink href="/orders" label="Powrót do zamówień" />}
             title="Lista zamówień"
@@ -89,18 +96,20 @@ const OrdersListPage = () => {
                   >
                      Edytuj zamówienie…
                   </Button>
-                  <Button
-                     type="button"
-                     variant="warning"
-                     size="sm"
-                     disabled={ORDER_LIST_ROWS.length === 0}
-                     onClick={() => {
-                        setRemoveModalKey(previous => previous + 1)
-                        setRemoveOpen(true)
-                     }}
-                  >
-                     Usuń zamówienie…
-                  </Button>
+                  {isOwner ? (
+                     <Button
+                        type="button"
+                        variant="warning"
+                        size="sm"
+                        disabled={ORDER_LIST_ROWS.length === 0}
+                        onClick={() => {
+                           setRemoveModalKey(previous => previous + 1)
+                           setRemoveOpen(true)
+                        }}
+                     >
+                        Usuń zamówienie…
+                     </Button>
+                  ) : null}
                </>
             }
          />
@@ -153,11 +162,12 @@ function EditOrderModal({
    onClose: () => void
    orders: Array<{ id: number; ticket: string; status: OrderStatus }>
    options: { value: string; label: string }[]
-   onSave: (orderId: number, status: OrderStatus) => void
+   onSave: (orderId: number, status: OrderStatus) => void | Promise<void>
 }) {
    const first = orders[0]
    const [orderIdStr, setOrderIdStr] = useState(() => String(first?.id ?? ""))
    const [status, setStatus] = useState<OrderStatus>(() => first?.status ?? "new")
+   const [error, setError] = useState<string | null>(null)
 
    const syncFromPick = (idStr: string) => {
       setOrderIdStr(idStr)
@@ -170,8 +180,12 @@ function EditOrderModal({
    const handleSave = () => {
       const id = Number.parseInt(orderIdStr, 10)
       if (!Number.isFinite(id)) return
-      onSave(id, status)
-      onClose()
+      setError(null)
+      void Promise.resolve(onSave(id, status))
+         .then(() => onClose())
+         .catch((err: unknown) => {
+            setError(err instanceof ApiError ? err.message : "Nie udało się zapisać statusu.")
+         })
    }
 
    return (
@@ -181,6 +195,7 @@ function EditOrderModal({
                <h2 className="text-text-700 text-xl font-medium">Edycja zamówienia</h2>
                <p className="text-text-500 mt-1 text-sm">Wybierz rekord — bez wpisywania numeru z palca.</p>
             </div>
+            {error ? <p className="text-warning text-sm">{error}</p> : null}
             <label className="flex flex-col gap-1">
                <span className="text-text-700 text-sm font-medium">Zamówienie</span>
                <select
@@ -231,10 +246,11 @@ function RemoveOrderModal({
    open: boolean
    onClose: () => void
    options: { value: string; label: string }[]
-   onRemove: (orderId: number) => void
+   onRemove: (orderId: number) => void | Promise<void>
 }) {
    const [orderIdStr, setOrderIdStr] = useState(() => options[0]?.value ?? "")
    const [reason, setReason] = useState("")
+   const [error, setError] = useState<string | null>(null)
 
    if (!open || options.length === 0) return null
 
@@ -243,9 +259,15 @@ function RemoveOrderModal({
       if (!Number.isFinite(id)) return
       const ok = typeof window !== "undefined" ? window.confirm("Na pewno usunąć to zamówienie z kolejki?") : true
       if (!ok) return
-      onRemove(id)
-      setReason("")
-      onClose()
+      setError(null)
+      void Promise.resolve(onRemove(id))
+         .then(() => {
+            setReason("")
+            onClose()
+         })
+         .catch((err: unknown) => {
+            setError(err instanceof ApiError ? err.message : "Nie udało się usunąć zamówienia.")
+         })
    }
 
    return (
@@ -255,6 +277,7 @@ function RemoveOrderModal({
                <h2 className="text-text-700 text-xl font-medium">Usuń zamówienie</h2>
                <p className="text-text-500 mt-1 text-sm">Wybierz rekord — powód pozostaje tylko informacyjny (mock).</p>
             </div>
+            {error ? <p className="text-warning text-sm">{error}</p> : null}
             <label className="flex flex-col gap-1">
                <span className="text-text-700 text-sm font-medium">Zamówienie</span>
                <select

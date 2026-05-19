@@ -16,7 +16,7 @@ import {
    ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline"
 import { useAuth } from "@/components/auth/AuthProvider"
-import { appRoleLabel, initials } from "@/lib/auth"
+import { appRoleLabel, canAccessMainNav, initials, isMainNavActive, resolveMainNavHref } from "@/lib/auth"
 import type { AppRole } from "@/lib/auth"
 
 const MAIN_NAV_ITEMS = [
@@ -69,14 +69,32 @@ const NOTIFICATIONS_SUB_ITEMS = [
    { href: "/notifications/board", label: "Tablica" },
 ]
 
+function warehouseSubItems(role: AppRole) {
+   if (role === "owner") return WAREHOUSE_SUB_ITEMS
+   return WAREHOUSE_SUB_ITEMS.filter(
+      item =>
+         item.href === "/warehouse" ||
+         item.href === "/warehouse/stock" ||
+         item.href === "/warehouse/deliveries" ||
+         item.href === "/warehouse/expiration"
+   )
+}
+
+function mainNavForRole(role: AppRole) {
+   return MAIN_NAV_ITEMS.filter(item => canAccessMainNav(item.href, role))
+}
+
 function moduleSubNav(role: AppRole): Partial<Record<string, { href: string; label: string }[]>> {
-   return {
-      "/warehouse": WAREHOUSE_SUB_ITEMS,
-      "/recipes": RECIPES_SUB_ITEMS,
+   const nav: Partial<Record<string, { href: string; label: string }[]>> = {
+      "/warehouse": warehouseSubItems(role),
       "/orders": ORDERS_SUB_ITEMS,
       "/schedule": scheduleSubItems(role),
-      "/notifications": NOTIFICATIONS_SUB_ITEMS,
    }
+   if (role === "owner") {
+      nav["/recipes"] = RECIPES_SUB_ITEMS
+      nav["/notifications"] = NOTIFICATIONS_SUB_ITEMS
+   }
+   return nav
 }
 
 interface AppShellProps {
@@ -88,7 +106,9 @@ const AppShell = ({ children }: AppShellProps) => {
    const { session, logout } = useAuth()
    const [isDrawerOpen, setIsDrawerOpen] = useState(false)
 
-   const subNav = useMemo(() => moduleSubNav(session?.appRole ?? "employee"), [session?.appRole])
+   const role = session?.appRole ?? "employee"
+   const mainNav = useMemo(() => mainNavForRole(role), [role])
+   const subNav = useMemo(() => moduleSubNav(role), [role])
 
    useEffect(() => {
       if (!isDrawerOpen) return
@@ -99,28 +119,27 @@ const AppShell = ({ children }: AppShellProps) => {
       }
    }, [isDrawerOpen])
 
-   const isMainItemActive = (href: string) => {
-      if (href === "/") return pathname === "/"
-      return pathname.startsWith(href)
-   }
+   const isMainItemActive = (href: string) => isMainNavActive(href, pathname, role)
 
    const userInitials = session ? initials(session) : "?"
    const roleLabel = session ? appRoleLabel(session.appRole) : ""
 
    const handleLogout = () => {
-      logout()
-      window.location.href = "/login"
+      void logout().then(() => {
+         window.location.href = "/login"
+      })
    }
 
    const renderNav = (onNavigate?: () => void, compact?: boolean) =>
-      MAIN_NAV_ITEMS.map(item => {
+      mainNav.map(item => {
          const active = isMainItemActive(item.href)
          const Icon = item.icon
+         const navHref = resolveMainNavHref(item.href, role)
          const subs = subNav[item.href]
          return (
             <div key={item.href}>
                <Link
-                  href={item.href}
+                  href={navHref}
                   onClick={onNavigate}
                   className={`flex items-center gap-2 rounded-sm px-3 py-2.5 text-sm transition-colors ${
                      active ? "bg-foreground text-text-700" : "text-text-500 hover:bg-foreground hover:text-text-700"
@@ -156,7 +175,7 @@ const AppShell = ({ children }: AppShellProps) => {
 
    return (
       <div className="min-h-screen bg-foreground">
-         <div className="mx-auto flex min-h-screen max-w-[1600px] p-2 sm:p-3 md:min-h-[calc(100vh-0.75rem)]">
+         <div className="flex min-h-screen w-full p-2 sm:p-3 lg:p-4">
             <aside className="border-border-300 bg-background sticky top-3 hidden h-[calc(100vh-1.5rem)] w-64 shrink-0 flex-col rounded-md border p-4 shadow-sm lg:flex xl:w-72">
                <p className="text-text-300 mb-3 text-xs font-medium tracking-wide uppercase">GastroM8</p>
                <p className="text-text-700 mb-5 text-3xl leading-none font-semibold tracking-tight xl:text-4xl">
@@ -212,7 +231,7 @@ const AppShell = ({ children }: AppShellProps) => {
                   </div>
                </header>
 
-               <main className="app-main-pad mt-2 min-w-0 flex-1 px-1 py-2 sm:mt-3 sm:px-2 sm:py-3 lg:mt-0 lg:pb-0">
+               <main className="app-main-pad mt-2 min-w-0 flex-1 px-2 py-2 sm:mt-3 sm:px-4 sm:py-3 lg:mt-0 lg:px-6 lg:pb-0">
                   {children}
                </main>
             </div>
@@ -261,16 +280,18 @@ const AppShell = ({ children }: AppShellProps) => {
          ) : null}
 
          <nav
-            className="border-border-300 bg-background fixed inset-x-0 bottom-0 z-30 grid grid-cols-6 border-t px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_var(--shadow-color-300)] lg:hidden"
+            className="border-border-300 bg-background fixed inset-x-0 bottom-0 z-50 grid border-t px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] shadow-[0_-4px_20px_var(--shadow-color-300)] lg:hidden"
+            style={{ gridTemplateColumns: `repeat(${mainNav.length}, minmax(0, 1fr))` }}
             aria-label="Główna nawigacja"
          >
-            {MAIN_NAV_ITEMS.map(item => {
+            {mainNav.map(item => {
                const active = isMainItemActive(item.href)
                const Icon = item.icon
+               const navHref = resolveMainNavHref(item.href, role)
                return (
                   <Link
                      key={item.href}
-                     href={item.href}
+                     href={navHref}
                      onClick={() => setIsDrawerOpen(false)}
                      className={`flex flex-col items-center justify-center gap-0.5 rounded-sm px-0.5 py-1.5 text-[10px] leading-tight font-medium transition-colors ${
                         active ? "text-primary-500" : "text-text-500"

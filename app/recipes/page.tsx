@@ -1,15 +1,11 @@
 "use client"
 
-import FeatureSection from "@/components/features/FeatureSection"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
 import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
-import { APP_FEATURE_GROUPS } from "@/lib/feature-map"
 import { RECIPE_TEMPLATES } from "@/lib/recipe-templates"
 
 const RecipesHubPage = () => {
    const { ready, catalog } = useRecipeCatalog()
-   const recipes = APP_FEATURE_GROUPS.find(group => group.route === "/recipes")
-
    const listed = ready ? catalog.recipes.filter(r => r.is_active).length : 0
    const totalDishes = ready ? catalog.recipes.length : 0
    const ingredientLinks = ready ? catalog.ingredients.length : 0
@@ -51,7 +47,6 @@ const RecipesHubPage = () => {
             </p>
          </div>
          <HubNavigationGrid items={items} />
-         {recipes ? <FeatureSection group={recipes} /> : null}
       </div>
    )
 }

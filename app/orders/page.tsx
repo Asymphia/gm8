@@ -1,13 +1,10 @@
 "use client"
 
-import FeatureSection from "@/components/features/FeatureSection"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
 import { useOperational } from "@/components/operations/OperationalProvider"
-import { APP_FEATURE_GROUPS } from "@/lib/feature-map"
 
 const OrdersPage = () => {
    const { ready, orders } = useOperational()
-   const ordersGroup = APP_FEATURE_GROUPS.find(group => group.route === "/orders")
 
    const newCount = orders.filter(o => o.status === "new").length
    const items = [
@@ -34,7 +31,6 @@ const OrdersPage = () => {
             </p>
          </div>
          <HubNavigationGrid items={items} />
-         {ordersGroup ? <FeatureSection group={ordersGroup} /> : null}
       </div>
    )
 }

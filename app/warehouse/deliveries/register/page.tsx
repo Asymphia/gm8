@@ -1,10 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import BackLink from "@/components/ui/BackLink"
 import Button from "@/components/ui/Button"
-import { mockDb } from "@/lib/mock-db"
+import { isApiEnabled } from "@/lib/api/config"
+import { createDelivery } from "@/lib/api/deliveries-api"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 import { useOperational } from "@/components/operations/OperationalProvider"
 import { loadDeliveriesBrowser, saveDeliveriesBrowser } from "@/lib/deliveries-storage"
 
@@ -16,19 +18,29 @@ interface DraftItem {
 }
 
 const RegisterDeliveryPage = () => {
+   const useApi = isApiEnabled()
    const router = useRouter()
-   const { receiveDeliveryItems } = useOperational()
+   const { receiveDeliveryItems, refresh: refreshOps } = useOperational()
+   const { products, ready: productsReady } = useProductCatalog()
    const [supplierName, setSupplierName] = useState("")
    const [deliveryDate, setDeliveryDate] = useState("")
    const [deliveryType, setDeliveryType] = useState<"supplier" | "internal_transfer">("supplier")
-   const [items, setItems] = useState<DraftItem[]>(
-      mockDb.product_catalog.map(product => ({
-         productId: product.id,
-         selected: false,
-         quantity: "",
-         expiryDate: "",
-      }))
-   )
+   const [items, setItems] = useState<DraftItem[]>([])
+   const [pending, setPending] = useState(false)
+   const [error, setError] = useState<string | null>(null)
+
+   useEffect(() => {
+      if (productsReady && items.length === 0) {
+         setItems(
+            products.map(product => ({
+               productId: product.id,
+               selected: false,
+               quantity: "",
+               expiryDate: "",
+            }))
+         )
+      }
+   }, [products, productsReady, items.length])
 
    const selectedItemsCount = useMemo(() => items.filter(item => item.selected).length, [items])
 
@@ -47,8 +59,9 @@ const RegisterDeliveryPage = () => {
       setItems(previous => previous.map(item => (item.productId === productId ? { ...item, [field]: value } : item)))
    }
 
-   const handleSave = () => {
-      const store = loadDeliveriesBrowser()
+   const handleSave = async () => {
+      setError(null)
+      setPending(true)
       const selectedLines = items
          .filter(item => item.selected && Number(item.quantity) > 0 && item.expiryDate)
          .map(item => ({
@@ -58,29 +71,59 @@ const RegisterDeliveryPage = () => {
             supplier_name: supplierName.trim(),
          }))
 
-      if (selectedLines.length === 0) return
-
-      const id = store.nextId
-      const deliveredAt = `${deliveryDate}T08:00:00.000Z`
-
-      const isInternal = deliveryType === "internal_transfer"
-
-      store.deliveries.unshift({
-         id,
-         delivered_at: deliveredAt,
-         type: deliveryType,
-         supplier_name: supplierName.trim(),
-         status: isInternal ? "accepted" : "pending",
-         items: selectedLines,
-      })
-      store.nextId = id + 1
-      saveDeliveriesBrowser(store)
-
-      if (isInternal) {
-         receiveDeliveryItems(selectedLines)
+      if (selectedLines.length === 0) {
+         setPending(false)
+         return
       }
 
-      router.push("/warehouse/deliveries")
+      try {
+         const isInternal = deliveryType === "internal_transfer"
+         const deliveredAt = `${deliveryDate}T08:00:00.000Z`
+
+         if (useApi) {
+            await createDelivery({
+               supplierName: supplierName.trim(),
+               kind: deliveryType,
+               type: isInternal ? "Delivered" : "Pending",
+               deliveredAt: isInternal ? deliveredAt : null,
+               items: selectedLines.map(l => ({
+                  product_Id: l.product_id,
+                  quantity: l.quantity,
+                  expiryDate: `${l.expiry_date}T12:00:00Z`,
+                  supplierName: l.supplier_name,
+               })),
+            })
+            if (isInternal) {
+               await refreshOps()
+            }
+         } else {
+            const store = loadDeliveriesBrowser()
+            const id = store.nextId
+            store.deliveries.unshift({
+               id,
+               delivered_at: deliveredAt,
+               type: deliveryType,
+               supplier_name: supplierName.trim(),
+               status: isInternal ? "accepted" : "pending",
+               items: selectedLines,
+            })
+            store.nextId = id + 1
+            saveDeliveriesBrowser(store)
+            if (isInternal) {
+               receiveDeliveryItems(selectedLines)
+            }
+         }
+
+         router.push("/warehouse/deliveries")
+      } catch (err) {
+         setError(err instanceof Error ? err.message : "Nie udało się zapisać dostawy.")
+      } finally {
+         setPending(false)
+      }
+   }
+
+   if (!productsReady) {
+      return <p className="text-text-500 text-sm">Ładowanie produktów…</p>
    }
 
    return (
@@ -98,10 +141,9 @@ const RegisterDeliveryPage = () => {
                   <span className="text-text-700 text-sm font-medium">Dostawca</span>
                   <input
                      type="text"
-                     placeholder="np. Świeże Pole"
                      value={supplierName}
-                     onChange={event => setSupplierName(event.target.value)}
-                     className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
+                     onChange={e => setSupplierName(e.target.value)}
+                     className="border-border-300 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                   />
                </label>
                <label className="space-y-1">
@@ -109,16 +151,16 @@ const RegisterDeliveryPage = () => {
                   <input
                      type="date"
                      value={deliveryDate}
-                     onChange={event => setDeliveryDate(event.target.value)}
-                     className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
+                     onChange={e => setDeliveryDate(e.target.value)}
+                     className="border-border-300 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                   />
                </label>
                <label className="space-y-1">
-                  <span className="text-text-700 text-sm font-medium">Typ dostawy</span>
+                  <span className="text-text-700 text-sm font-medium">Typ</span>
                   <select
                      value={deliveryType}
-                     onChange={event => setDeliveryType(event.target.value as "supplier" | "internal_transfer")}
-                     className="border-border-300 text-text-700 focus:border-primary-500 w-full rounded-sm border px-3 py-2 text-sm outline-none"
+                     onChange={e => setDeliveryType(e.target.value as "supplier" | "internal_transfer")}
+                     className="border-border-300 w-full rounded-sm border px-3 py-2 text-sm outline-none"
                   >
                      <option value="supplier">Dostawca zewnętrzny</option>
                      <option value="internal_transfer">Transfer wewnętrzny</option>
@@ -127,66 +169,49 @@ const RegisterDeliveryPage = () => {
             </div>
          </section>
 
-         <section className="overflow-x-auto rounded-sm border border-border-300 bg-background">
-            <div className="grid min-w-[56rem] grid-cols-[3rem_minmax(0,1fr)_8rem_10rem_10rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p />
-               <p>Produkt</p>
-               <p>J.m.</p>
-               <p>Ilość</p>
-               <p>Data ważności</p>
-            </div>
-            {items.map(item => {
-               const product = mockDb.product_catalog.find(row => row.id === item.productId)
-               return (
-                  <div
-                     key={item.productId}
-                     className="grid min-w-[56rem] grid-cols-[3rem_minmax(0,1fr)_8rem_10rem_10rem] border-b border-border-300 px-4 py-3 text-sm text-text-500 last:border-0"
-                  >
-                     <div className="flex justify-center">
+         <section className="rounded-sm border border-border-300 bg-background p-4">
+            <h2 className="text-text-700 mb-3 text-lg font-medium">Pozycje dostawy</h2>
+            <div className="space-y-2">
+               {items.map(item => {
+                  const product = products.find(p => p.id === item.productId)
+                  return (
+                     <div
+                        key={item.productId}
+                        className="grid grid-cols-1 items-center gap-2 rounded-sm border border-border-300 p-3 md:grid-cols-[auto_minmax(0,1fr)_8rem_10rem]"
+                     >
                         <input
                            type="checkbox"
                            checked={item.selected}
                            onChange={() => toggleItemSelection(item.productId)}
-                           aria-label={`Uwzględnij ${product?.name ?? "produkt"}`}
-                           className="h-4 w-4 accent-primary-500"
+                        />
+                        <span className="text-text-700 text-sm">{product?.name ?? `Produkt #${item.productId}`}</span>
+                        <input
+                           type="number"
+                           min="0"
+                           step="0.01"
+                           placeholder="Ilość"
+                           value={item.quantity}
+                           onChange={e => updateItemField(item.productId, "quantity", e.target.value)}
+                           className="border-border-300 rounded-sm border px-2 py-1 text-sm outline-none"
+                        />
+                        <input
+                           type="date"
+                           value={item.expiryDate}
+                           onChange={e => updateItemField(item.productId, "expiryDate", e.target.value)}
+                           className="border-border-300 rounded-sm border px-2 py-1 text-sm outline-none"
                         />
                      </div>
-                     <p>{product?.name ?? "Nieznany produkt"}</p>
-                     <p>{product?.unit ?? "-"}</p>
-                     <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={item.quantity}
-                        onChange={event => updateItemField(item.productId, "quantity", event.target.value)}
-                        disabled={!item.selected}
-                        className="border-border-300 disabled:bg-foreground rounded-sm border px-2 py-1 text-sm outline-none disabled:opacity-70"
-                     />
-                     <input
-                        type="date"
-                        value={item.expiryDate}
-                        onChange={event => updateItemField(item.productId, "expiryDate", event.target.value)}
-                        disabled={!item.selected}
-                        className="border-border-300 disabled:bg-foreground rounded-sm border px-2 py-1 text-sm outline-none disabled:opacity-70"
-                     />
-                  </div>
-               )
-            })}
+                  )
+               })}
+            </div>
+            <p className="text-text-300 mt-2 text-xs">Zaznaczono pozycji: {selectedItemsCount}</p>
          </section>
 
-         <div className="flex flex-col justify-between gap-3 rounded-sm border border-border-300 bg-background p-4 sm:flex-row sm:items-center">
-            <p className="text-text-500 text-sm">
-               Wybrane produkty: <span className="text-text-700 font-medium">{selectedItemsCount}</span>
-            </p>
-            <div className="flex gap-2">
-               <Button type="button" variant="outline" onClick={() => router.push("/warehouse/deliveries")}>
-                  Anuluj
-               </Button>
-               <Button type="button" disabled={!isDraftReady} onClick={handleSave}>
-                  Zapisz szkic dostawy
-               </Button>
-            </div>
-         </div>
+         {error ? <p className="text-warning text-sm">{error}</p> : null}
+
+         <Button type="button" disabled={!isDraftReady || pending} onClick={() => void handleSave()}>
+            {pending ? "Zapisywanie…" : "Zapisz dostawę"}
+         </Button>
       </div>
    )
 }

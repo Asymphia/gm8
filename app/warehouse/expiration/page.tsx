@@ -1,7 +1,7 @@
 "use client"
 
 import BackLink from "@/components/ui/BackLink"
-import { mockDb } from "@/lib/mock-db"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 import { useOperational } from "@/components/operations/OperationalProvider"
 
 const TODAY = "2026-05-08"
@@ -9,6 +9,7 @@ const DAY_MS = 86_400_000
 
 const ExpirationPage = () => {
    const { ready, stock } = useOperational()
+   const { productById } = useProductCatalog()
 
    if (!ready) {
       return <p className="text-text-500 text-sm">Ładowanie stanów…</p>
@@ -16,7 +17,7 @@ const ExpirationPage = () => {
 
    const expirationRows = stock
       .map(stockRow => {
-         const product = mockDb.product_catalog.find(row => row.id === stockRow.product_id)
+         const product = productById(stockRow.product_id)
          const daysLeft =
             (new Date(`${stockRow.expiry_date}T00:00:00Z`).getTime() - new Date(`${TODAY}T00:00:00Z`).getTime()) / DAY_MS
          return {

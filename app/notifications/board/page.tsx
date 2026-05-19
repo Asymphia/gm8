@@ -1,12 +1,21 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { useAuth } from "@/components/auth/AuthProvider"
 import QuickActionModal from "@/components/ui/QuickActionModal"
 import { mockDb, type AnnouncementRow } from "@/lib/mock-db"
 import BackLink from "@/components/ui/BackLink"
 import Modal from "@/components/ui/Modal"
 import Button from "@/components/ui/Button"
+import { isApiEnabled } from "@/lib/api/config"
+import {
+   createAnnouncement,
+   deleteAnnouncement,
+   fetchAllAnnouncements,
+   fetchPublishedAnnouncements,
+   updateAnnouncement,
+} from "@/lib/api/announcements-api"
+import { ApiError } from "@/lib/api/client"
 
 function nextAnnouncementId(existing: AnnouncementRow[]): number {
    return existing.length === 0 ? 1 : Math.max(...existing.map(a => a.id)) + 1
@@ -17,8 +26,34 @@ function isoNow(): string {
 }
 
 const NotificationsBoardPage = () => {
-   const { isOwner } = useAuth()
-   const [posts, setPosts] = useState<AnnouncementRow[]>(() => mockDb.announcements.map(a => ({ ...a })))
+   const { isOwner, session } = useAuth()
+   const useApi = isApiEnabled()
+   const [posts, setPosts] = useState<AnnouncementRow[]>(() =>
+      useApi ? [] : mockDb.announcements.map(a => ({ ...a }))
+   )
+   const [loading, setLoading] = useState(useApi)
+   const [error, setError] = useState<string | null>(null)
+
+   const reload = useCallback(async () => {
+      if (!useApi) {
+         setPosts(mockDb.announcements.map(a => ({ ...a })))
+         return
+      }
+      setLoading(true)
+      setError(null)
+      try {
+         const rows = isOwner ? await fetchAllAnnouncements() : await fetchPublishedAnnouncements()
+         setPosts(rows)
+      } catch (err) {
+         setError(err instanceof ApiError ? err.message : "Nie udało się pobrać ogłoszeń.")
+      } finally {
+         setLoading(false)
+      }
+   }, [useApi, isOwner])
+
+   useEffect(() => {
+      void reload()
+   }, [reload])
 
    const visiblePosts = useMemo(
       () => (isOwner ? posts : posts.filter(p => p.is_published)),
@@ -30,99 +65,128 @@ const NotificationsBoardPage = () => {
    const [announcementEditKey, setAnnouncementEditKey] = useState(0)
    const [announcementRemoveKey, setAnnouncementRemoveKey] = useState(0)
 
-   const BOARD_ROWS = useMemo(
+   const sortedPosts = useMemo(
       () =>
-         visiblePosts.map(announcement => ({
-            id: announcement.id,
-            title: announcement.title,
-            visibility: announcement.is_published ? "Opublikowane" : "Szkic",
-            type: `Autor #${announcement.user_id}`,
-         })),
+         [...visiblePosts].sort(
+            (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+         ),
       [visiblePosts]
    )
 
+   function formatDate(iso: string): string {
+      const d = new Date(iso)
+      if (Number.isNaN(d.getTime())) return iso.slice(0, 10)
+      return new Intl.DateTimeFormat("pl-PL", {
+         day: "numeric",
+         month: "short",
+         year: "numeric",
+         hour: "2-digit",
+         minute: "2-digit",
+      }).format(d)
+   }
+
    const selectOptions = useMemo(
       () =>
-         visiblePosts.map(p => ({
+         (isOwner ? posts : visiblePosts).map(p => ({
             value: String(p.id),
             label: `${p.title} (#${p.id}) · ${p.is_published ? "Opublikowane" : "Szkic"}`,
          })),
-      [visiblePosts]
+      [isOwner, posts, visiblePosts]
    )
 
    return (
       <div className="space-y-6">
-         <BackLink href="/notifications" label="Powrót do ogłoszeń" />
+         {isOwner ? <BackLink href="/notifications" label="Powrót do ogłoszeń" /> : null}
          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
-               <h1>Tablica ogłoszeń</h1>
-               <p className="text-text-500 mt-1">
-                  {isOwner
-                     ? "Wybór ogłoszenia z listy — edycja i publikacja tylko w tej sesji przeglądarki."
-                     : "Opublikowane komunikaty zespołu (tryb tylko do odczytu)."}
-               </p>
+               <h1>{isOwner ? "Tablica ogłoszeń" : "Ogłoszenia"}</h1>
+               {isOwner ? (
+                  <p className="text-text-500 mt-1">
+                     {useApi
+                        ? "Zarządzanie ogłoszeniami przez API."
+                        : "Wybór ogłoszenia z listy — edycja i publikacja tylko w tej sesji przeglądarki."}
+                  </p>
+               ) : null}
             </div>
             {isOwner ? (
-            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-               <QuickActionModal
-                  triggerLabel="Nowy wpis…"
-                  title="Opublikuj ogłoszenie"
-                  confirmLabel="Dodaj do tablicy"
-                  fields={[
-                     { name: "title", label: "Tytuł", placeholder: "Tytuł" },
-                     { name: "content", label: "Treść", placeholder: "Treść" },
-                     {
-                        kind: "select",
-                        name: "published",
-                        label: "Widoczność",
-                        options: [
-                           { value: "yes", label: "Opublikowane" },
-                           { value: "no", label: "Szkic" },
-                        ],
-                     },
-                  ]}
-                  onConfirm={vals => {
-                     const id = nextAnnouncementId(posts)
-                     const ts = isoNow()
-                     const row: AnnouncementRow = {
-                        id,
-                        title: vals.title?.trim() || "Bez tytułu",
-                        content: vals.content?.trim() || "",
-                        created_at: ts,
-                        timestamp_updated_at: ts,
-                        is_published: vals.published === "yes",
-                        user_id: 1,
-                     }
-                     setPosts(previous => [...previous, row])
-                  }}
-               />
-               <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={posts.length === 0}
-                  onClick={() => {
-                     setAnnouncementEditKey(previous => previous + 1)
-                     setEditOpen(true)
-                  }}
-               >
-                  Edytuj wpis…
-               </Button>
-               <Button
-                  type="button"
-                  variant="warning"
-                  size="sm"
-                  disabled={posts.length === 0}
-                  onClick={() => {
-                     setAnnouncementRemoveKey(previous => previous + 1)
-                     setRemoveOpen(true)
-                  }}
-               >
-                  Usuń wpis…
-               </Button>
-            </div>
+               <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  <QuickActionModal
+                     triggerLabel="Nowy wpis…"
+                     title="Opublikuj ogłoszenie"
+                     confirmLabel="Dodaj do tablicy"
+                     fields={[
+                        { name: "title", label: "Tytuł", placeholder: "Tytuł" },
+                        { name: "content", label: "Treść", placeholder: "Treść" },
+                        {
+                           kind: "select",
+                           name: "published",
+                           label: "Widoczność",
+                           options: [
+                              { value: "yes", label: "Opublikowane" },
+                              { value: "no", label: "Szkic" },
+                           ],
+                        },
+                     ]}
+                     onConfirm={async vals => {
+                        if (useApi) {
+                           try {
+                              await createAnnouncement({
+                                 title: vals.title?.trim() || "Bez tytułu",
+                                 content: vals.content?.trim() || "",
+                                 isPublished: vals.published === "yes",
+                                 user_Id: session?.userId ?? null,
+                              })
+                              await reload()
+                           } catch (err) {
+                              setError(err instanceof ApiError ? err.message : "Nie udało się dodać ogłoszenia.")
+                           }
+                           return
+                        }
+
+                        const id = nextAnnouncementId(posts)
+                        const ts = isoNow()
+                        const row: AnnouncementRow = {
+                           id,
+                           title: vals.title?.trim() || "Bez tytułu",
+                           content: vals.content?.trim() || "",
+                           created_at: ts,
+                           timestamp_updated_at: ts,
+                           is_published: vals.published === "yes",
+                           user_id: session?.userId ?? "1",
+                        }
+                        setPosts(previous => [...previous, row])
+                     }}
+                  />
+                  <Button
+                     type="button"
+                     variant="outline"
+                     size="sm"
+                     disabled={posts.length === 0}
+                     onClick={() => {
+                        setAnnouncementEditKey(previous => previous + 1)
+                        setEditOpen(true)
+                     }}
+                  >
+                     Edytuj wpis…
+                  </Button>
+                  <Button
+                     type="button"
+                     variant="warning"
+                     size="sm"
+                     disabled={posts.length === 0}
+                     onClick={() => {
+                        setAnnouncementRemoveKey(previous => previous + 1)
+                        setRemoveOpen(true)
+                     }}
+                  >
+                     Usuń wpis…
+                  </Button>
+               </div>
             ) : null}
          </div>
+
+         {error ? <p className="text-warning text-sm">{error}</p> : null}
+         {loading ? <p className="text-text-500 text-sm">Ładowanie ogłoszeń…</p> : null}
 
          {isOwner && editOpen ? (
             <EditAnnouncementModal
@@ -131,7 +195,11 @@ const NotificationsBoardPage = () => {
                onClose={() => setEditOpen(false)}
                posts={posts}
                options={selectOptions}
-               onSave={nextPosts => setPosts(nextPosts)}
+               useApi={useApi}
+               onSave={async nextPosts => {
+                  if (useApi) await reload()
+                  else setPosts(nextPosts)
+               }}
             />
          ) : null}
          {isOwner && removeOpen ? (
@@ -141,24 +209,28 @@ const NotificationsBoardPage = () => {
                onClose={() => setRemoveOpen(false)}
                posts={posts}
                options={selectOptions}
-               onRemove={filtered => setPosts(filtered)}
+               useApi={useApi}
+               onRemove={async filtered => {
+                  if (useApi) await reload()
+                  else setPosts(filtered)
+               }}
             />
          ) : null}
 
          <div className="overflow-x-auto rounded-sm border border-border-300 bg-background">
-            <div className="grid min-w-[40rem] grid-cols-[minmax(0,1fr)_12rem_10rem] border-b border-border-300 px-4 py-3 text-sm font-medium text-text-700">
-               <p>Ogłoszenie</p>
-               <p>Widoczność</p>
-               <p>Typ</p>
-            </div>
-            {BOARD_ROWS.map(row => (
+            {!loading && sortedPosts.length === 0 ? (
+               <p className="text-text-500 px-4 py-6 text-sm">Brak ogłoszeń do wyświetlenia.</p>
+            ) : null}
+            {sortedPosts.map(announcement => (
                <div
-                  key={row.id}
-                  className="grid min-w-[40rem] grid-cols-[minmax(0,1fr)_12rem_10rem] border-b border-border-300 px-4 py-3 text-sm text-text-500 last:border-0"
+                  key={announcement.id}
+                  className="border-b border-border-300 px-4 py-4 last:border-0"
                >
-                  <p>{row.title}</p>
-                  <p>{row.visibility}</p>
-                  <p>{row.type}</p>
+                  <p className="text-text-700 font-semibold">{announcement.title}</p>
+                  <p className="text-text-500 mt-2 whitespace-pre-wrap text-sm">{announcement.content || "—"}</p>
+                  <p className="text-text-300 mt-2 text-xs">
+                     {announcement.is_published ? "Opublikowane" : "Szkic"} · {formatDate(announcement.created_at)}
+                  </p>
                </div>
             ))}
          </div>
@@ -171,13 +243,15 @@ function EditAnnouncementModal({
    onClose,
    posts,
    options,
+   useApi,
    onSave,
 }: {
    open: boolean
    onClose: () => void
    posts: AnnouncementRow[]
    options: { value: string; label: string }[]
-   onSave: (next: AnnouncementRow[]) => void
+   useApi: boolean
+   onSave: (next: AnnouncementRow[]) => void | Promise<void>
 }) {
    const firstId = posts[0]?.id
    const [idStr, setIdStr] = useState(() => String(firstId ?? ""))
@@ -185,6 +259,7 @@ function EditAnnouncementModal({
    const [title, setTitle] = useState(() => initial?.title ?? "")
    const [content, setContent] = useState(() => initial?.content ?? "")
    const [published, setPublished] = useState(() => initial?.is_published ?? false)
+   const [saving, setSaving] = useState(false)
 
    if (!open) return null
 
@@ -198,11 +273,32 @@ function EditAnnouncementModal({
       }
    }
 
-   const handleSave = () => {
+   const handleSave = async () => {
       const id = Number.parseInt(idStr, 10)
       if (!Number.isFinite(id)) return
+
+      if (useApi) {
+         setSaving(true)
+         try {
+            await updateAnnouncement(id, {
+               title,
+               content,
+               isPublished: published,
+            })
+            await onSave(posts)
+            onClose()
+         } finally {
+            setSaving(false)
+         }
+         return
+      }
+
       const updated = isoNow()
-      onSave(posts.map(p => (p.id === id ? { ...p, title, content, is_published: published, timestamp_updated_at: updated } : p)))
+      await onSave(
+         posts.map(p =>
+            p.id === id ? { ...p, title, content, is_published: published, timestamp_updated_at: updated } : p
+         )
+      )
       onClose()
    }
 
@@ -252,8 +348,8 @@ function EditAnnouncementModal({
                <Button type="button" variant="outline" onClick={onClose}>
                   Anuluj
                </Button>
-               <Button type="button" variant="primary" onClick={handleSave}>
-                  Zapisz
+               <Button type="button" variant="primary" onClick={() => void handleSave()} disabled={saving}>
+                  {saving ? "Zapisywanie…" : "Zapisz"}
                </Button>
             </div>
          </div>
@@ -266,24 +362,40 @@ function RemoveAnnouncementModal({
    onClose,
    posts,
    options,
+   useApi,
    onRemove,
 }: {
    open: boolean
    onClose: () => void
    posts: AnnouncementRow[]
    options: { value: string; label: string }[]
-   onRemove: (next: AnnouncementRow[]) => void
+   useApi: boolean
+   onRemove: (next: AnnouncementRow[]) => void | Promise<void>
 }) {
    const [idStr, setIdStr] = useState(() => String(posts[0]?.id ?? ""))
+   const [removing, setRemoving] = useState(false)
 
    if (!open) return null
 
-   const handleRemove = () => {
+   const handleRemove = async () => {
       const id = Number.parseInt(idStr, 10)
       if (!Number.isFinite(id)) return
       const ok = typeof window !== "undefined" ? window.confirm("Usunąć ten wpis z listy?") : true
       if (!ok) return
-      onRemove(posts.filter(p => p.id !== id))
+
+      if (useApi) {
+         setRemoving(true)
+         try {
+            await deleteAnnouncement(id)
+            await onRemove(posts.filter(p => p.id !== id))
+            onClose()
+         } finally {
+            setRemoving(false)
+         }
+         return
+      }
+
+      await onRemove(posts.filter(p => p.id !== id))
       onClose()
    }
 
@@ -312,8 +424,8 @@ function RemoveAnnouncementModal({
                <Button type="button" variant="outline" onClick={onClose}>
                   Anuluj
                </Button>
-               <Button type="button" variant="warning" onClick={handleRemove}>
-                  Usuń
+               <Button type="button" variant="warning" onClick={() => void handleRemove()} disabled={removing}>
+                  {removing ? "Usuwanie…" : "Usuń"}
                </Button>
             </div>
          </div>

@@ -80,7 +80,7 @@ const RecipeEditingBoardPage = () => {
                         onClick={() => {
                            const current = catalog.recipes.find(r => r.id === row.id)
                            if (!current) return
-                           setRecipeActive(row.id, !current.is_active)
+                           void setRecipeActive(row.id, !current.is_active)
                         }}
                      >
                         {catalog.recipes.find(r => r.id === row.id)?.is_active ? "Ukryj" : "Pokaż"}

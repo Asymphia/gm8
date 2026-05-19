@@ -2,11 +2,12 @@
 
 import Link from "next/link"
 import BackLink from "@/components/ui/BackLink"
-import { mockDb } from "@/lib/mock-db"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
 
 const RecipeDefinitionsPage = () => {
    const { ready, catalog } = useRecipeCatalog()
+   const { productById } = useProductCatalog()
 
    const rows =
       ready ?
@@ -15,7 +16,7 @@ const RecipeDefinitionsPage = () => {
             const preview = ingredientRows
                .map(
                   li =>
-                     mockDb.product_catalog.find(product => product.id === li.product_id)?.name ??
+                     productById(li.product_id)?.name ??
                      `Produkt #${li.product_id}`
                )
                .join(", ")

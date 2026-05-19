@@ -19,7 +19,7 @@ export type FormField =
         name?: string
         label: string
         placeholder?: string
-        type?: "text" | "number" | "date" | "email" | "tel"
+        type?: "text" | "number" | "date" | "email" | "tel" | "password"
         defaultValue?: string
      }
    | {

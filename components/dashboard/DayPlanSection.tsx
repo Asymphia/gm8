@@ -1,14 +1,18 @@
 "use client"
 
 import { useAuth } from "@/components/auth/AuthProvider"
-import { collectDayPlan } from "@/lib/day-plan"
+import { loadDayPlan } from "@/lib/day-plan"
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { PLANNER_UPDATED_EVENT } from "@/lib/schedule-planner-storage"
+import { isApiEnabled } from "@/lib/api/config"
 
 const DayPlanSection = () => {
    const { session, isOwner } = useAuth()
    const [plannerTick, setPlannerTick] = useState(0)
+   const [entries, setEntries] = useState<Awaited<ReturnType<typeof loadDayPlan>>>([])
+   const [loading, setLoading] = useState(false)
+   const [error, setError] = useState<string | null>(null)
 
    useEffect(() => {
       const bump = () => setPlannerTick(t => t + 1)
@@ -20,10 +24,32 @@ const DayPlanSection = () => {
       }
    }, [])
 
-   const entries = useMemo(() => {
-      if (!session) return []
-      void plannerTick
-      return collectDayPlan(isOwner ? undefined : session.userId)
+   useEffect(() => {
+      if (!session) {
+         setEntries([])
+         return
+      }
+
+      let cancelled = false
+      setLoading(true)
+      setError(null)
+      void loadDayPlan(isOwner ? undefined : session.userId)
+         .then(rows => {
+            if (!cancelled) setEntries(rows)
+         })
+         .catch(() => {
+            if (!cancelled) {
+               setEntries([])
+               setError("Nie udało się wczytać planu dnia.")
+            }
+         })
+         .finally(() => {
+            if (!cancelled) setLoading(false)
+         })
+
+      return () => {
+         cancelled = true
+      }
    }, [session, isOwner, plannerTick])
 
    const todayLabel = useMemo(
@@ -48,15 +74,20 @@ const DayPlanSection = () => {
                   Kalendarz zmian →
                </Link>
             ) : (
-               <Link href="/notifications" className="text-primary-500 hover:text-primary-700 text-sm font-medium">
-                  Ogłoszenia →
+               <Link href="/schedule" className="text-primary-500 hover:text-primary-700 text-sm font-medium">
+                  Grafik →
                </Link>
             )}
          </div>
-         {entries.length === 0 ? (
+         {error ? <p className="text-warning text-sm">{error}</p> : null}
+         {loading ? (
+            <p className="text-text-500 text-sm">Ładowanie planu dnia…</p>
+         ) : entries.length === 0 ? (
             <p className="text-text-500 text-sm">
                {isOwner
-                  ? "Brak zaplanowanych zmian na dziś — dodaj je w kalendarzu."
+                  ? isApiEnabled()
+                     ? "Brak zaplanowanych zmian na dziś."
+                     : "Brak zaplanowanych zmian na dziś — dodaj je w kalendarzu."
                   : "Brak Twoich zmian na dziś."}
             </p>
          ) : (

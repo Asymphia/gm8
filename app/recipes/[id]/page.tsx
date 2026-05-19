@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useParams, useRouter } from "next/navigation"
 import BackLink from "@/components/ui/BackLink"
 import Button from "@/components/ui/Button"
-import { mockDb } from "@/lib/mock-db"
+import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 import { useRecipeCatalog } from "@/components/recipes/RecipeCatalogProvider"
 
 const RecipeDetailPage = () => {
@@ -15,6 +15,7 @@ const RecipeDetailPage = () => {
    const recipeId = Number.parseInt(idParam, 10)
 
    const { ready, catalog, seedRecipeIds, deleteRecipeById } = useRecipeCatalog()
+   const { productById } = useProductCatalog()
 
    if (!Number.isFinite(recipeId) || Number.isNaN(recipeId)) {
       return (
@@ -43,8 +44,8 @@ const RecipeDetailPage = () => {
 
    const seeded = seedRecipeIds.includes(recipeId as (typeof seedRecipeIds)[number])
 
-   const handleDelete = () => {
-      const deleted = deleteRecipeById(recipeId)
+   const handleDelete = async () => {
+      const deleted = await deleteRecipeById(recipeId)
       if (deleted) router.push("/recipes/definitions")
    }
 
@@ -89,7 +90,7 @@ const RecipeDetailPage = () => {
                <p className="text-text-500 px-4 py-6 text-sm">Brak składników · użyj Edytuj przepis, aby dodać produkty z katalogu.</p>
             ) : (
                lines.map((line, index) => {
-                  const product = mockDb.product_catalog.find(p => p.id === line.product_id)
+                  const product = productById(line.product_id)
                   const unit = product?.unit ?? "pcs"
                   return (
                      <div

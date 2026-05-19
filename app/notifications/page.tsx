@@ -1,4 +1,10 @@
+"use client"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/components/auth/AuthProvider"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
+import { notificationsNavHref } from "@/lib/auth"
 
 const ANNOUNCEMENTS = [
    { title: "Jutrzejsza inwentaryzacja", author: "Kierownik", publishedAt: "2026-05-07 14:00" },
@@ -16,12 +22,26 @@ const hubItems = [
    {
       href: "/notifications/board",
       label: "Tablica",
-      description: "Operacyjny widok tablicy wpisów (mock).",
+      description: "Operacyjny widok tablicy wpisów.",
       value: "Otwórz",
    },
 ]
 
 const NotificationPage = () => {
+   const router = useRouter()
+   const { session, ready } = useAuth()
+
+   useEffect(() => {
+      if (!ready || !session) return
+      if (session.appRole === "employee") {
+         router.replace(notificationsNavHref("employee"))
+      }
+   }, [ready, router, session])
+
+   if (!ready || session?.appRole === "employee") {
+      return null
+   }
+
    return (
       <div className="space-y-6">
          <div>
