@@ -10,10 +10,15 @@ import Button from "@/components/ui/Button"
 import Modal from "@/components/ui/Modal"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { isApiEnabled } from "@/lib/api/config"
-import { ApiError } from "@/lib/api/client"
 import { createUser, deleteUser, fetchUsers, updateUser } from "@/lib/api/users-api"
 import type { UserDto } from "@/lib/api/types"
 import { appRoleToApiRoles } from "@/lib/api/mappers"
+import {
+   EMPLOYEE_PASSWORD_HINT,
+   formatCaughtError,
+   usernameFromEmail,
+   validateNewEmployeeInput,
+} from "@/lib/format-api-error"
 
 const seedEmployees = (): EmployeeType[] =>
    mockDb.users.map(user => ({
@@ -37,11 +42,6 @@ function userDtoToEmployee(user: UserDto): EmployeeType {
    }
 }
 
-function usernameFromEmail(email: string): string {
-   const local = email.split("@")[0]?.trim() || "user"
-   return local.replace(/[^a-zA-Z0-9._-]/g, "").slice(0, 50) || "user"
-}
-
 const EmployeesContent = () => {
    const useApi = isApiEnabled()
    const [employees, setEmployees] = useState<EmployeeType[]>(seedEmployees)
@@ -61,9 +61,9 @@ const EmployeesContent = () => {
       setError(null)
       try {
          const rows = await fetchUsers()
-         setEmployees(rows.map(userDtoToEmployee))
+         setEmployees(rows.filter(u => u.isActive).map(userDtoToEmployee))
       } catch (err) {
-         setError(err instanceof ApiError ? err.message : "Nie udało się pobrać pracowników.")
+         setError(formatCaughtError(err, "Nie udało się pobrać pracowników."))
       } finally {
          setLoading(false)
       }
@@ -88,11 +88,11 @@ const EmployeesContent = () => {
          {error ? <p className="text-warning mb-3 text-sm">{error}</p> : null}
          {loading ? <p className="text-text-500 mb-3 text-sm">Ładowanie pracowników…</p> : null}
          <Table employees={employees} />
-         <div className="flex flex-wrap justify-end gap-2">
+         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
             <Button
                type="button"
                variant="outline"
-               size="sm"
+               className="min-h-11 w-full sm:w-auto"
                disabled={employees.length === 0}
                onClick={() => {
                   setEmployeesEditKey(previous => previous + 1)
@@ -104,31 +104,33 @@ const EmployeesContent = () => {
             <Button
                type="button"
                variant="warning"
-               size="sm"
+               className="min-h-11 w-full sm:w-auto"
                disabled={employees.length === 0}
                onClick={() => {
                   setEmployeesRemoveKey(previous => previous + 1)
                   setRemoveOpen(true)
                }}
             >
-               Usuń pracownika…
+               Usuń z listy…
             </Button>
             <QuickActionModal
                triggerLabel="Dodaj pracownika"
                title="Dodaj pracownika"
                cancelLabel="Anuluj"
                confirmLabel="Dodaj"
+               description={useApi ? EMPLOYEE_PASSWORD_HINT : undefined}
+               triggerVariant="primary"
                fields={[
-                  { name: "first_name", label: "Imię", placeholder: "Anna" },
+                  { name: "first_name", label: "Imię", placeholder: "Jan" },
                   { name: "last_name", label: "Nazwisko", placeholder: "Kowalska" },
                   { name: "phone", label: "Telefon", placeholder: "+48 500 000 000", type: "tel" },
-                  { name: "email", label: "E-mail", placeholder: "name@company.com", type: "email" },
+                  { name: "email", label: "E-mail", placeholder: "jan.kowalska@firma.pl", type: "email" },
                   ...(useApi
                      ? [
                           {
                              name: "password",
                              label: "Hasło",
-                             placeholder: "Password123!",
+                             placeholder: "min. 6 znaków, np. demo12",
                              type: "password" as const,
                           },
                           {
@@ -153,25 +155,32 @@ const EmployeesContent = () => {
                   },
                ]}
                onConfirm={async vals => {
-                  const emailLower = vals.email?.trim().toLowerCase()
-                  if (!emailLower) return
-                  if (employees.some(e => e.email.toLowerCase() === emailLower)) return
+                  const validationError = validateNewEmployeeInput(vals)
+                  if (validationError) {
+                     throw new Error(validationError)
+                  }
+
+                  const emailLower = vals.email!.trim().toLowerCase()
+                  if (employees.some(e => e.email.toLowerCase() === emailLower)) {
+                     throw new Error("Ten adres e-mail jest już na liście pracowników.")
+                  }
 
                   if (useApi) {
                      try {
                         const appRole = vals.role === "owner" ? "owner" : "employee"
                         await createUser({
                            userName: usernameFromEmail(emailLower),
-                           firstName: vals.first_name?.trim() || "—",
-                           lastName: vals.last_name?.trim() || "—",
+                           firstName: vals.first_name!.trim(),
+                           lastName: vals.last_name!.trim(),
                            email: vals.email!.trim(),
-                           password: vals.password?.trim() || "Password123!",
+                           password: vals.password!.trim(),
                            roles: appRoleToApiRoles(appRole),
                            isActive: vals.active === "yes",
                         })
+                        setError(null)
                         await reload()
                      } catch (err) {
-                        setError(err instanceof ApiError ? err.message : "Nie udało się dodać pracownika.")
+                        throw new Error(formatCaughtError(err, "Nie udało się dodać pracownika."))
                      }
                      return
                   }
@@ -395,8 +404,11 @@ function RemoveEmployeeModal({
          setRemoving(true)
          try {
             await deleteUser(picked.id)
-            await onSave(employees.filter(e => e.email !== emailPick))
+            await onSave(employees)
             onClose()
+         } catch (err) {
+            const message = formatCaughtError(err, "Nie udało się usunąć pracownika.")
+            if (typeof window !== "undefined") window.alert(message)
          } finally {
             setRemoving(false)
          }

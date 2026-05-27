@@ -65,6 +65,7 @@ const SchedulePlanPage = () => {
          .then(rows =>
             setUsers(
                rows
+                  .filter(u => u.isActive)
                   .map(mapApiUser)
                   .sort((a, b) => a.lastName.localeCompare(b.lastName, undefined, { sensitivity: "base" }))
             )

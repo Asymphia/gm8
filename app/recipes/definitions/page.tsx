@@ -11,7 +11,10 @@ const RecipeDefinitionsPage = () => {
 
    const rows =
       ready ?
-         [...catalog.recipes].sort((a, b) => a.name.localeCompare(b.name)).map(recipe => {
+         [...catalog.recipes]
+            .filter(recipe => recipe.is_active)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(recipe => {
             const ingredientRows = catalog.ingredients.filter(i => i.recipe_id === recipe.id)
             const preview = ingredientRows
                .map(

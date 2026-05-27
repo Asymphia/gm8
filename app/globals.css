@@ -30,6 +30,9 @@
    --shadow-sm: 0 1px 9px 0 var(--shadow-color-300);
    --shadow-md: 0 1px 9px 0 var(--shadow-color-500);
    --shadow-lg: 0 1px 9px 0 var(--shadow-color-700);
+
+   --mobile-bottom-nav-height: calc(4rem + env(safe-area-inset-bottom, 0px));
+   --app-scroll-bottom-gap: 1.25rem;
 }
 
 @theme inline {
@@ -223,20 +226,46 @@
       float: right;
    }
 
-   .app-main-pad {
-      padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+   @media (max-width: 1023px) {
+      .app-shell-body {
+         padding-bottom: var(--mobile-bottom-nav-height);
+      }
+
+      .app-main-pad {
+         padding-bottom: var(--app-scroll-bottom-gap);
+         scroll-padding-bottom: calc(var(--mobile-bottom-nav-height) + var(--app-scroll-bottom-gap));
+      }
+   }
+
+   .form-actions-mobile {
+      position: fixed;
+      inset-inline: 0;
+      bottom: var(--mobile-bottom-nav-height);
+      z-index: 40;
+      display: flex;
+      gap: 0.5rem;
+      border-top: 1px solid var(--border-300);
+      background: var(--background);
+      padding: 0.75rem 1rem;
+      box-shadow: 0 -4px 20px var(--shadow-color-300);
+   }
+
+   @media (min-width: 1024px) {
+      .form-actions-mobile {
+         position: static;
+         inset: auto;
+         z-index: auto;
+         border-top: none;
+         padding: 0;
+         box-shadow: none;
+         margin-top: 1rem;
+      }
    }
 
    @media (max-width: 1023px) {
       [data-nextjs-toast],
       [data-next-mark] {
          display: none !important;
-      }
-   }
-
-   @media (min-width: 768px) {
-      .app-main-pad {
-         padding-bottom: 0;
       }
    }
 

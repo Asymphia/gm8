@@ -1,61 +1,96 @@
 "use client"
 
-import { useEffect } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/components/auth/AuthProvider"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
 import { notificationsNavHref } from "@/lib/auth"
+import { isApiEnabled } from "@/lib/api/config"
+import { fetchPublishedAnnouncements } from "@/lib/api/announcements-api"
+import { mockDb, type AnnouncementRow } from "@/lib/mock-db"
 
-const ANNOUNCEMENTS = [
-   { title: "Jutrzejsza inwentaryzacja", author: "Kierownik", publishedAt: "2026-05-07 14:00" },
-   { title: "Zaktualizowana lista higieny", author: "Odpowiedzialny za jakość", publishedAt: "2026-05-06 18:30" },
-   { title: "Aktualizacja obsady na weekend", author: "Kadry", publishedAt: "2026-05-05 12:00" },
-]
-
-const hubItems = [
-   {
-      href: "/notifications",
-      label: "Kanał ogłoszeń",
-      description: "Opublikowane wpisy z datami w kolejności chronologicznej.",
-      value: String(ANNOUNCEMENTS.length),
-   },
-   {
-      href: "/notifications/board",
-      label: "Tablica",
-      description: "Operacyjny widok tablicy wpisów.",
-      value: "Otwórz",
-   },
-]
+function formatDate(iso: string): string {
+   const d = new Date(iso)
+   if (Number.isNaN(d.getTime())) return iso.slice(0, 16).replace("T", " ")
+   return new Intl.DateTimeFormat("pl-PL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+   }).format(d)
+}
 
 const NotificationPage = () => {
    const router = useRouter()
    const { session, ready } = useAuth()
+   const useApi = isApiEnabled()
+   const [posts, setPosts] = useState<AnnouncementRow[]>(() =>
+      useApi ? [] : mockDb.announcements.filter(a => a.is_published)
+   )
+   const [loading, setLoading] = useState(useApi)
+
+   const reload = useCallback(async () => {
+      if (!useApi) {
+         setPosts(mockDb.announcements.filter(a => a.is_published))
+         return
+      }
+      setLoading(true)
+      try {
+         const rows = await fetchPublishedAnnouncements()
+         setPosts(rows)
+      } catch {
+         setPosts([])
+      } finally {
+         setLoading(false)
+      }
+   }, [useApi])
 
    useEffect(() => {
       if (!ready || !session) return
       if (session.appRole === "employee") {
          router.replace(notificationsNavHref("employee"))
+         return
       }
-   }, [ready, router, session])
+      void reload()
+   }, [ready, reload, router, session])
 
    if (!ready || session?.appRole === "employee") {
       return null
    }
 
+   const publishedCount = posts.filter(p => p.is_published).length
+
+   const hubItems = [
+      {
+         href: "/notifications/board",
+         label: "Tablica ogłoszeń",
+         description: "Dodawanie, edycja i publikacja wpisów.",
+         value: loading ? "…" : String(publishedCount),
+      },
+   ]
+
    return (
       <div className="space-y-6">
          <div>
             <h1>Ogłoszenia</h1>
-            <p className="text-text-500 mt-1">Przegląd opublikowanych komunikatów zespołu.</p>
+            <p className="text-text-500 mt-1">
+               {useApi
+                  ? "Opublikowane komunikaty z API. Zarządzanie wpisami na tablicy."
+                  : "Tryb demo — dane z mocków w przeglądarce."}
+            </p>
          </div>
          <HubNavigationGrid items={hubItems} />
+         {loading ? <p className="text-text-500 text-sm">Ładowanie ogłoszeń…</p> : null}
          <div className="space-y-3">
-            {ANNOUNCEMENTS.map(item => (
-               <article key={item.title} className="rounded-sm border border-border-300 bg-background p-4">
+            {!loading && posts.length === 0 ? (
+               <p className="text-text-500 text-sm">Brak opublikowanych ogłoszeń.</p>
+            ) : null}
+            {posts.map(item => (
+               <article key={item.id} className="rounded-sm border border-border-300 bg-background p-4">
                   <p className="text-text-700 font-medium">{item.title}</p>
-                  <p className="text-sm text-text-500">
-                     {item.author} · {item.publishedAt}
-                  </p>
+                  <p className="text-text-500 mt-1 text-sm line-clamp-3">{item.content || "—"}</p>
+                  <p className="text-text-300 mt-2 text-xs">{formatDate(item.created_at)}</p>
                </article>
             ))}
          </div>

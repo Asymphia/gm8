@@ -4,10 +4,18 @@ import BackLink from "@/components/ui/BackLink"
 import { useProductCatalog } from "@/components/catalog/ProductCatalogProvider"
 import { useOperational } from "@/components/operations/OperationalProvider"
 
-const TODAY = "2026-05-08"
 const DAY_MS = 86_400_000
 
+function todayIsoLocal(): string {
+   const d = new Date()
+   const y = d.getFullYear()
+   const m = String(d.getMonth() + 1).padStart(2, "0")
+   const day = String(d.getDate()).padStart(2, "0")
+   return `${y}-${m}-${day}`
+}
+
 const ExpirationPage = () => {
+   const today = todayIsoLocal()
    const { ready, stock } = useOperational()
    const { productById } = useProductCatalog()
 
@@ -19,7 +27,7 @@ const ExpirationPage = () => {
       .map(stockRow => {
          const product = productById(stockRow.product_id)
          const daysLeft =
-            (new Date(`${stockRow.expiry_date}T00:00:00Z`).getTime() - new Date(`${TODAY}T00:00:00Z`).getTime()) / DAY_MS
+            (new Date(`${stockRow.expiry_date}T00:00:00Z`).getTime() - new Date(`${today}T00:00:00Z`).getTime()) / DAY_MS
          return {
             key: stockRow.id,
             product: product?.name ?? `Produkt #${stockRow.product_id}`,

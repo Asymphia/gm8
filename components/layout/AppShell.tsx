@@ -209,7 +209,7 @@ const AppShell = ({ children }: AppShellProps) => {
                ) : null}
             </aside>
 
-            <div className="flex min-w-0 flex-1 flex-col">
+            <div className="app-shell-body flex min-h-0 min-w-0 flex-1 flex-col">
                <header className="border-border-300 bg-background sticky top-0 z-30 flex items-center justify-between gap-2 rounded-md border px-3 py-2.5 shadow-sm lg:hidden">
                   <Link href="/" className="text-text-700 text-lg font-semibold">
                      GM<span className="text-primary-500">8</span>
@@ -231,7 +231,7 @@ const AppShell = ({ children }: AppShellProps) => {
                   </div>
                </header>
 
-               <main className="app-main-pad mt-2 min-w-0 flex-1 px-2 py-2 sm:mt-3 sm:px-4 sm:py-3 lg:mt-0 lg:px-6 lg:pb-0">
+               <main className="app-main-pad mt-2 min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-y-contain px-2 py-2 sm:mt-3 sm:px-4 sm:py-3 lg:mt-0 lg:px-6 lg:pb-0">
                   {children}
                </main>
             </div>
@@ -242,11 +242,14 @@ const AppShell = ({ children }: AppShellProps) => {
                <button
                   type="button"
                   aria-label="Zamknij menu"
-                  className="fixed inset-0 z-40 bg-overlay lg:hidden"
+                  className="fixed inset-0 z-[55] bg-overlay lg:hidden"
                   onClick={() => setIsDrawerOpen(false)}
                />
-               <aside className="border-border-300 bg-background fixed inset-y-0 right-0 z-50 flex w-[min(100%,20rem)] flex-col border-l p-4 shadow-lg lg:hidden">
-                  <div className="mb-4 flex items-center justify-between">
+               <aside
+                  className="border-border-300 bg-background fixed top-0 right-0 z-[60] flex w-[min(100%,20rem)] flex-col border-l p-4 shadow-lg lg:hidden"
+                  style={{ bottom: "var(--mobile-bottom-nav-height)" }}
+               >
+                  <div className="mb-4 flex shrink-0 items-center justify-between">
                      <p className="text-text-700 font-semibold">Menu</p>
                      <button
                         type="button"
@@ -257,9 +260,11 @@ const AppShell = ({ children }: AppShellProps) => {
                         <XMarkIcon className="h-5 w-5" />
                      </button>
                   </div>
-                  <nav className="flex-1 space-y-0.5 overflow-y-auto">{renderNav(() => setIsDrawerOpen(false))}</nav>
+                  <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain">
+                     {renderNav(() => setIsDrawerOpen(false))}
+                  </nav>
                   {session ? (
-                     <div className="border-border-300 mt-4 border-t pt-4">
+                     <div className="border-border-300 mt-4 shrink-0 border-t pt-4 pb-1">
                         <p className="text-text-700 text-sm font-medium">
                            {session.firstName} {session.lastName}
                         </p>
@@ -267,10 +272,13 @@ const AppShell = ({ children }: AppShellProps) => {
                         <p className="text-text-300 mt-0.5 text-xs">{roleLabel}</p>
                         <button
                            type="button"
-                           onClick={handleLogout}
-                           className="text-text-500 hover:text-text-700 mt-3 flex w-full items-center gap-2 rounded-sm px-2 py-2 text-sm"
+                           onClick={() => {
+                              setIsDrawerOpen(false)
+                              handleLogout()
+                           }}
+                           className="text-text-500 hover:text-text-700 hover:bg-foreground mt-3 flex min-h-11 w-full items-center gap-2 rounded-sm px-2 py-2.5 text-sm font-medium"
                         >
-                           <ArrowRightOnRectangleIcon className="h-4 w-4" />
+                           <ArrowRightOnRectangleIcon className="h-5 w-5 shrink-0" />
                            Wyloguj
                         </button>
                      </div>

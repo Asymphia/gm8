@@ -164,7 +164,7 @@ const DashboardContent = () => {
                <p className="text-text-500 text-sm capitalize">{greeting}</p>
                <h1 className="mt-1">Pulpit</h1>
                <p className="text-text-500 mt-1 max-w-2xl">
-                  Skrót do modułów i bieżące sygnały z localStorage operacji oraz katalogów demo.
+                  Skrót do modułów i bieżące sygnały z magazynu i zamówień (API).
                </p>
             </div>
             <Link

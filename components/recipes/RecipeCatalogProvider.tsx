@@ -83,9 +83,9 @@ export function RecipeCatalogProvider({ children }: { children: ReactNode }) {
    }, [refresh, useApi])
 
    useEffect(() => {
-      if (!ready) return
+      if (!ready || useApi) return
       saveRecipeCatalogBrowser(catalog)
-   }, [catalog, ready])
+   }, [catalog, ready, useApi])
 
    const dispatchUpdated = () => {
       if (typeof window !== "undefined") {

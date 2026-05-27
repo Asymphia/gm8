@@ -37,7 +37,7 @@ const RecipeEditingBoardPage = () => {
             <div>
                <h1>Cykl życia przepisu</h1>
                <p className="text-text-500 mt-1">
-                  Szybkie ukrywanie i pokazywanie przepisów w menu mock. Edycja strukturalna w liście przepisów i edytorze.
+                  Szybkie ukrywanie i pokazywanie przepisów w menu zamówień. Zmiana zapisuje się w księdze przepisów.
                </p>
             </div>
             <Link
@@ -53,7 +53,7 @@ const RecipeEditingBoardPage = () => {
                <p>Przepis</p>
                <p className="text-center">Produkty</p>
                <p>Stan cyklu</p>
-               <p>Data (mock)</p>
+               <p>Podgląd</p>
                <p className="text-right">Widoczność</p>
             </div>
             {rows.map(row => (
@@ -69,7 +69,7 @@ const RecipeEditingBoardPage = () => {
                   </Link>
                   <p className="text-center tabular-nums">{row.ingredientCount}</p>
                   <p>{row.state}</p>
-                  <p>{row.displayDate}</p>
+                  <p className="text-text-300 text-xs">—</p>
                   <div className="flex justify-end gap-2">
                      <Link href={`/recipes/${row.id}/edit`} className="text-primary-500 text-xs hover:underline">
                         Edytor

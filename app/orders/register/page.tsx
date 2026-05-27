@@ -131,8 +131,7 @@ const OrderRegistrationPage = () => {
                <h1>Rejestracja zamówień</h1>
                <p className="text-text-500 mt-1 max-w-2xl">
                   Wybierz danie i liczbę porcji. Szkic nie zmienia stanu; <span className="text-text-700">Przyjmij</span>{" "}
-                  korzysta z księgi przepisów (składniki × porcje) i odejmuje partie magazynowe metodą FIFO. Zapis w
-                  localStorage przeglądarki.
+                  korzysta z księgi przepisów (składniki × porcje) i odejmuje partie magazynowe metodą FIFO (API).
                </p>
             </div>
          </div>

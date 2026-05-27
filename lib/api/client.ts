@@ -1,6 +1,7 @@
 import { getApiBaseUrl } from "@/lib/api/config"
+import { formatApiErrorBody } from "@/lib/format-api-error"
 import { clearAuthTokens, getAccessToken, loadAuthTokens, saveAuthTokens } from "@/lib/api/tokens"
-import type { ApiProblemDetails, UserAuthDto } from "@/lib/api/types"
+import type { UserAuthDto } from "@/lib/api/types"
 
 export const AUTH_SESSION_EXPIRED_EVENT = "gm8:auth-session-expired"
 
@@ -26,21 +27,7 @@ function notifySessionExpired(): void {
 let refreshInFlight: Promise<string | null> | null = null
 
 function parseProblemMessage(body: unknown, fallback: string): string {
-   if (body && typeof body === "object") {
-      const problem = body as ApiProblemDetails & { message?: string; statusCode?: number }
-      if (problem.message && problem.message !== "Internal server error.") {
-         return problem.message
-      }
-      if (problem.detail && problem.detail !== "Internal server error.") {
-         return problem.detail
-      }
-      if (problem.title) return problem.title
-      if (problem.errors) {
-         const first = Object.values(problem.errors)[0]?.[0]
-         if (first) return first
-      }
-   }
-   return fallback
+   return formatApiErrorBody(body, fallback)
 }
 
 async function parseJsonSafe(response: Response): Promise<unknown> {

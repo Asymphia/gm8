@@ -41,7 +41,7 @@ interface QuickActionModalProps {
    triggerDisabled?: boolean
    prepend?: ReactNode
    fields: FormField[]
-   onConfirm?: (values: Record<string, string>) => void
+   onConfirm?: (values: Record<string, string>) => void | Promise<void>
 }
 
 function buildInitialValues(fields: FormField[]): Record<string, string> {
@@ -77,10 +77,13 @@ function KeyedFormGate({
    confirmLabel: string
    cancelLabel: string
    onCancel: () => void
-   onSubmitted: (values: Record<string, string>) => void
+   onSubmitted: (values: Record<string, string>) => void | Promise<void>
+   submitting?: boolean
 }) {
    const initialValues = useMemo(() => buildInitialValues(fields), [fields])
    const [values, setValues] = useState<Record<string, string>>(() => ({ ...initialValues }))
+   const [submitError, setSubmitError] = useState<string | null>(null)
+   const [submitting, setSubmitting] = useState(false)
 
    return (
       <div className="space-y-4">
@@ -88,6 +91,8 @@ function KeyedFormGate({
             <h2 className="text-text-700 text-xl font-medium">{title}</h2>
             {description ? <p className="text-text-500 mt-1 text-sm">{description}</p> : null}
          </div>
+
+         {submitError ? <p className="text-warning text-sm">{submitError}</p> : null}
 
          {prepend ? <div className="rounded-sm border border-border-300 bg-surface px-3 py-2 text-sm text-text-500">{prepend}</div> : null}
 
@@ -132,12 +137,27 @@ function KeyedFormGate({
             })}
          </div>
 
-         <div className="flex justify-end gap-2 border-t border-border-300 pt-3">
-            <Button type="button" variant="outline" onClick={onCancel}>
+         <div className="flex flex-col-reverse gap-2 border-t border-border-300 pt-3 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" className="min-h-11 w-full sm:w-auto" onClick={onCancel} disabled={submitting}>
                {cancelLabel}
             </Button>
-            <Button type="button" variant="primary" onClick={() => onSubmitted(values)}>
-               {confirmLabel}
+            <Button
+               type="button"
+               variant="primary"
+               className="min-h-11 w-full sm:w-auto"
+               disabled={submitting}
+               onClick={() => {
+                  setSubmitError(null)
+                  setSubmitting(true)
+                  void Promise.resolve(onSubmitted(values))
+                     .then(() => onCancel())
+                     .catch(err => {
+                        setSubmitError(err instanceof Error ? err.message : "Operacja nie powiodła się.")
+                     })
+                     .finally(() => setSubmitting(false))
+               }}
+            >
+               {submitting ? "Zapisywanie…" : confirmLabel}
             </Button>
          </div>
       </div>
@@ -166,7 +186,7 @@ const QuickActionModal = ({
 
    return (
       <>
-         <Button type="button" variant={triggerVariant} onClick={handleOpen} disabled={triggerDisabled}>
+         <Button type="button" variant={triggerVariant} className="min-h-11 w-full sm:w-auto" onClick={handleOpen} disabled={triggerDisabled}>
             {triggerLabel}
          </Button>
          <Modal isOpen={open} onClose={() => setOpen(false)}>
@@ -180,10 +200,7 @@ const QuickActionModal = ({
                   confirmLabel={confirmLabel}
                   cancelLabel={cancelLabel}
                   onCancel={() => setOpen(false)}
-                  onSubmitted={values => {
-                     onConfirm?.(values)
-                     setOpen(false)
-                  }}
+                  onSubmitted={values => onConfirm?.(values)}
                />
             ) : null}
          </Modal>

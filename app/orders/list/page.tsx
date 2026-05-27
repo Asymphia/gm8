@@ -275,7 +275,7 @@ function RemoveOrderModal({
          <div className="space-y-4">
             <div>
                <h2 className="text-text-700 text-xl font-medium">Usuń zamówienie</h2>
-               <p className="text-text-500 mt-1 text-sm">Wybierz rekord — powód pozostaje tylko informacyjny (mock).</p>
+               <p className="text-text-500 mt-1 text-sm">Wybierz rekord — powód jest tylko informacyjny (nie trafia do API).</p>
             </div>
             {error ? <p className="text-warning text-sm">{error}</p> : null}
             <label className="flex flex-col gap-1">

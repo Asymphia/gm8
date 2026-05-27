@@ -62,7 +62,7 @@ const RecipeDetailPage = () => {
             </Link>
                {!seeded ? (
                   <Button type="button" variant="warning" onClick={handleDelete}>
-                     Usuń przepis
+                     Usuń z listy
                   </Button>
                ) : null}
             </div>
@@ -76,7 +76,7 @@ const RecipeDetailPage = () => {
             </p>
             <p className="text-text-500 mt-1 text-sm">Status: {recipe.is_active ? "Aktywny" : "Nieaktywny"}</p>
             {seeded ? (
-               <p className="text-text-300 mt-2 text-xs">Przepis demo (seed) · nie można usunąć; edycje zapisują się w tej przeglądarce.</p>
+               <p className="text-text-300 mt-2 text-xs">Przepis startowy z bazy demo · nie można usunąć z poziomu aplikacji.</p>
             ) : null}
          </header>
 

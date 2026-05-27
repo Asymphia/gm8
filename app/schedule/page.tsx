@@ -1,15 +1,31 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useAuth } from "@/components/auth/AuthProvider"
 import EmployeeShiftCalendar from "@/components/schedule/EmployeeShiftCalendar"
 import { useSchedulePlanner } from "@/components/schedule/SchedulePlannerProvider"
 import { HubNavigationGrid } from "@/components/ui/HubNavigationGrid"
+import { isApiEnabled } from "@/lib/api/config"
+import { fetchUsers } from "@/lib/api/users-api"
 import { mockDb } from "@/lib/mock-db"
 import Link from "next/link"
 
 const SchedulePage = () => {
    const { isOwner } = useAuth()
    const planner = useSchedulePlanner()
+   const useApi = isApiEnabled()
+   const [employeeCount, setEmployeeCount] = useState<number | null>(null)
+
+   useEffect(() => {
+      if (!isOwner) return
+      if (!useApi) {
+         setEmployeeCount(mockDb.users.length)
+         return
+      }
+      void fetchUsers()
+         .then(users => setEmployeeCount(users.length))
+         .catch(() => setEmployeeCount(null))
+   }, [isOwner, useApi])
 
    const ownerItems = [
       {
@@ -22,7 +38,7 @@ const SchedulePage = () => {
          href: "/schedule/employees",
          label: "Pracownicy",
          description: "Lista zespołu, role i kontakt.",
-         value: String(mockDb.users.length),
+         value: employeeCount === null ? "…" : String(employeeCount),
       },
    ]
 

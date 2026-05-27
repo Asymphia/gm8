@@ -5,7 +5,7 @@ import type { ProductCreateRequest, ProductDto, ProductUpdateRequest } from "@/l
 
 export async function fetchProducts(): Promise<ProductCatalogRow[]> {
    const list = await apiRequest<ProductDto[]>("/api/Product")
-   return list.map(productDtoToRow)
+   return list.map(productDtoToRow).filter(p => p.is_active)
 }
 
 export async function createProduct(payload: {

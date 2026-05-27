@@ -25,8 +25,8 @@ const RecipeTemplatesPage = () => {
          <div>
             <h1>Szablony przepisów</h1>
             <p className="text-text-500 mt-1 max-w-3xl">
-               Szablony klonują istniejący szkielet przepisu demo wraz ze wszystkimi liniami składników. Otwierają edytor, w
-               którym możesz zmienić nazwę i ilości. Tylko mock — zapis w localStorage przeglądarki w tym prototypie.
+               Szablony klonują istniejący przepis wraz ze składnikami i otwierają edytor. Po zapisie tworzony jest nowy
+               przepis w księdze (API).
             </p>
          </div>
 
